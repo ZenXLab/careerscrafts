@@ -53,12 +53,10 @@ const autoBalanceResume = (data: ResumeData): ResumeData => {
 };
 
 const TemplatesSection = () => {
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [activeCategory, setActiveCategory] = useState<string>("technology");
   const [hoveredTemplate, setHoveredTemplate] = useState<string | null>(null);
 
-  const filteredTemplates = activeCategory 
-    ? industryResumes.filter(t => t.category === activeCategory)
-    : industryResumes;
+  const filteredTemplates = industryResumes.filter(t => t.category === activeCategory);
 
   return (
     <section id="templates" className="py-16 md:py-24 lg:py-32 relative">
@@ -89,18 +87,6 @@ const TemplatesSection = () => {
           className="mb-8 md:mb-12 -mx-4 px-4 sm:mx-0 sm:px-0"
         >
           <div className="flex gap-2 overflow-x-auto pb-2 sm:flex-wrap sm:justify-center sm:overflow-visible scrollbar-hide">
-            {/* All Templates Button */}
-            <button
-              onClick={() => setActiveCategory(null)}
-              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-all duration-300 whitespace-nowrap shrink-0 ${
-                activeCategory === null
-                  ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-                  : "bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground"
-              }`}
-            >
-              <Sparkles className="w-4 h-4" />
-              <span>All Templates</span>
-            </button>
             {categories.map((cat) => (
               <button
                 key={cat.id}
