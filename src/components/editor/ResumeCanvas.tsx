@@ -50,25 +50,29 @@ interface ResumeCanvasProps {
   onExportPDF?: () => void;
 }
 
-// Section type mapping
+// Section type mapping - All 18 sections
 const SECTION_TITLES: Record<string, string> = {
+  // Core (5)
   summary: "PROFESSIONAL SUMMARY",
-  skills: "CORE SKILLS",
   experience: "PROFESSIONAL EXPERIENCE",
+  skills: "SKILLS",
   education: "EDUCATION",
-  certifications: "CERTIFICATIONS",
-  languages: "LANGUAGES",
+  // Standard (6)
   projects: "PROJECTS",
-  awards: "AWARDS",
-  volunteering: "VOLUNTEERING",
-  interests: "INTERESTS",
-  references: "REFERENCES",
-  strengths: "STRENGTHS",
-  "industry-expertise": "INDUSTRY EXPERTISE",
+  certifications: "CERTIFICATIONS",
+  awards: "AWARDS & ACHIEVEMENTS",
+  languages: "LANGUAGES",
   publications: "PUBLICATIONS",
-  courses: "COURSES",
-  links: "FIND ME ONLINE",
-  custom: "CUSTOM SECTION",
+  volunteering: "VOLUNTEERING",
+  // Advanced (4)
+  additional_experience: "ADDITIONAL EXPERIENCE",
+  leadership: "LEADERSHIP & MANAGEMENT",
+  consulting: "CONSULTING & FREELANCE",
+  teaching: "TEACHING & MENTORING",
+  // Personal (3)
+  interests: "INTERESTS",
+  training: "TRAINING & COURSES",
+  books_talks: "BOOKS & TALKS",
 };
 
 // Sortable Section Wrapper
@@ -219,65 +223,70 @@ interface SectionContentProps {
 }
 
 const SectionContent = ({ sectionType, data, accentColor, isEditing }: SectionContentProps) => {
-  const title = SECTION_TITLES[sectionType] || sectionType.toUpperCase();
+  const title = SECTION_TITLES[sectionType] || sectionType.toUpperCase().replace(/_/g, " ");
+
+  // Section title header style
+  const titleStyle = {
+    fontSize: "11px",
+    fontWeight: 700,
+    color: accentColor,
+    borderBottom: `1px solid ${accentColor}`,
+    paddingBottom: "4px",
+    marginBottom: "8px",
+    letterSpacing: "0.05em",
+  };
+
+  // Render placeholder for empty sections
+  const renderPlaceholder = () => (
+    <section style={{ marginBottom: "16px", opacity: 0.5 }}>
+      <h2 style={titleStyle}>{title}</h2>
+      <p style={{ fontSize: "9px", color: "#9CA3AF", fontStyle: "italic" }}>
+        Click to add content...
+      </p>
+    </section>
+  );
 
   // Check if section has content
-  const hasContent = () => {
+  const hasContent = (): boolean => {
     switch (sectionType) {
       case "summary": return !!data.summary;
-      case "skills": return data.skills?.length > 0;
-      case "experience": return data.experience?.length > 0;
-      case "education": return data.education?.length > 0;
-      case "certifications": return data.certifications?.length > 0;
-      case "languages": return data.languages?.length > 0;
-      case "projects": return data.projects?.length > 0;
-      default: return false;
+      case "skills": return (data.skills?.length ?? 0) > 0;
+      case "experience": return (data.experience?.length ?? 0) > 0;
+      case "education": return (data.education?.length ?? 0) > 0;
+      case "certifications": return (data.certifications?.length ?? 0) > 0;
+      case "languages": return (data.languages?.length ?? 0) > 0;
+      case "projects": return (data.projects?.length ?? 0) > 0;
+      // Placeholder sections (will render placeholder UI)
+      case "awards":
+      case "volunteering":
+      case "additional_experience":
+      case "leadership":
+      case "consulting":
+      case "teaching":
+      case "interests":
+      case "training":
+      case "books_talks":
+      case "publications":
+        return false; // Will show placeholder
+      default: 
+        return false;
     }
   };
 
   if (!hasContent()) {
-    return (
-      <section style={{ marginBottom: "16px", opacity: 0.5 }}>
-        <h2
-          style={{
-            fontSize: "11px",
-            fontWeight: 700,
-            color: accentColor,
-            borderBottom: `1px solid ${accentColor}`,
-            paddingBottom: "4px",
-            marginBottom: "8px",
-            letterSpacing: "0.05em",
-          }}
-        >
-          {title}
-        </h2>
-        <p style={{ fontSize: "9px", color: "#9CA3AF", fontStyle: "italic" }}>
-          Click to add content...
-        </p>
-      </section>
-    );
+    return renderPlaceholder();
   }
 
   return (
     <section style={{ marginBottom: "16px" }}>
-      <h2
-        style={{
-          fontSize: "11px",
-          fontWeight: 700,
-          color: accentColor,
-          borderBottom: `1px solid ${accentColor}`,
-          paddingBottom: "4px",
-          marginBottom: "8px",
-          letterSpacing: "0.05em",
-        }}
-      >
-        {title}
-      </h2>
+      <h2 style={titleStyle}>{title}</h2>
 
+      {/* Summary */}
       {sectionType === "summary" && data.summary && (
         <p style={{ fontSize: "10px", lineHeight: 1.5, color: "#374151" }}>{data.summary}</p>
       )}
 
+      {/* Skills */}
       {sectionType === "skills" && data.skills?.map((group, i) => (
         <div key={i} style={{ marginBottom: "6px", fontSize: "9px" }}>
           <span style={{ fontWeight: 600, color: "#374151" }}>{group.category}: </span>
@@ -285,6 +294,7 @@ const SectionContent = ({ sectionType, data, accentColor, isEditing }: SectionCo
         </div>
       ))}
 
+      {/* Experience */}
       {sectionType === "experience" && data.experience?.map((exp) => (
         <div key={exp.id} style={{ marginBottom: "14px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
@@ -308,6 +318,7 @@ const SectionContent = ({ sectionType, data, accentColor, isEditing }: SectionCo
         </div>
       ))}
 
+      {/* Education */}
       {sectionType === "education" && data.education?.map((edu) => (
         <div key={edu.id} style={{ marginBottom: "10px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
@@ -322,6 +333,7 @@ const SectionContent = ({ sectionType, data, accentColor, isEditing }: SectionCo
         </div>
       ))}
 
+      {/* Certifications */}
       {sectionType === "certifications" && data.certifications?.map((cert) => (
         <div key={cert.id} style={{ marginBottom: "6px" }}>
           <span style={{ fontWeight: 600, fontSize: "10px", display: "block", color: "#111827" }}>{cert.name}</span>
@@ -329,12 +341,14 @@ const SectionContent = ({ sectionType, data, accentColor, isEditing }: SectionCo
         </div>
       ))}
 
+      {/* Languages */}
       {sectionType === "languages" && data.languages && (
         <p style={{ fontSize: "9px", color: "#374151" }}>
           {data.languages.map(l => `${l.language} (${l.proficiency})`).join(" • ")}
         </p>
       )}
 
+      {/* Projects */}
       {sectionType === "projects" && data.projects?.map((proj) => (
         <div key={proj.id} style={{ marginBottom: "10px" }}>
           <span style={{ fontWeight: 600, fontSize: "11px", display: "block", color: "#111827" }}>{proj.name}</span>
