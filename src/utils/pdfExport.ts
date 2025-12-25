@@ -1,8 +1,14 @@
 import { ResumeData, TemplateConfig } from "@/types/resume";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 // A4 dimensions at 96 DPI
 export const A4_WIDTH_PX = 794;
 export const A4_HEIGHT_PX = 1123;
+
+// A4 dimensions in mm
+const A4_WIDTH_MM = 210;
+const A4_HEIGHT_MM = 297;
 
 export interface ExportOptions {
   format: "pdf" | "png";
@@ -11,147 +17,178 @@ export interface ExportOptions {
 }
 
 /**
- * Exports the resume to PDF using browser print functionality
- * This ensures pixel-perfect A4 formatting
+ * Exports the resume to PDF using html2canvas + jsPDF
+ * This ensures pixel-perfect A4 formatting that matches preview
  */
 export const exportToPDF = async (
   resumeElement: HTMLElement,
-  template: TemplateConfig,
+  _template: TemplateConfig,
   data: ResumeData,
   options: ExportOptions = { format: "pdf" }
 ): Promise<void> => {
-  const { filename = `${data.personalInfo.name.replace(/\s+/g, "_")}_Resume` } = options;
+  const filename = options.filename || `${data.personalInfo.name.replace(/\s+/g, "_")}_Resume`;
+  const scale = options.scale || 2;
   
-  // Create a new window for printing
-  const printWindow = window.open("", "_blank", `width=${A4_WIDTH_PX},height=${A4_HEIGHT_PX}`);
+  // Find the actual resume content
+  const resumeShell = resumeElement.querySelector('.resume-shell') as HTMLElement | null;
+  const targetElement = resumeShell || resumeElement;
   
-  if (!printWindow) {
-    throw new Error("Could not open print window. Please allow popups.");
-  }
+  // Clone the element to avoid affecting the original
+  const clone = targetElement.cloneNode(true) as HTMLElement;
+  clone.style.transform = 'none';
+  clone.style.width = `${A4_WIDTH_PX}px`;
+  clone.style.minHeight = `${A4_HEIGHT_PX}px`;
+  clone.style.position = 'absolute';
+  clone.style.left = '-9999px';
+  clone.style.top = '0';
+  clone.style.background = 'white';
   
-  // Get the resume HTML content
-  const resumeContent = resumeElement.innerHTML;
+  // Remove any hover/focus states and editing UI
+  const dragHandles = clone.querySelectorAll('[data-drag-handle]');
+  dragHandles.forEach(el => {
+    if (el.parentNode) el.parentNode.removeChild(el);
+  });
   
-  // Build the print document
-  const printDocument = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>${filename}</title>
-  <style>
-    @page {
-      size: A4;
-      margin: 0;
-    }
+  const hiddenElements = clone.querySelectorAll('.opacity-0');
+  hiddenElements.forEach(el => el.classList.add('hidden'));
+  
+  document.body.appendChild(clone);
+  
+  try {
+    // Calculate pages needed
+    const contentHeight = clone.scrollHeight;
+    const pageCount = Math.ceil(contentHeight / A4_HEIGHT_PX);
     
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
+    // Create canvas with high resolution
+    const canvas = await html2canvas(clone, {
+      scale: scale,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      width: A4_WIDTH_PX,
+      height: contentHeight,
+      logging: false,
+    });
     
-    html, body {
-      width: 210mm;
-      min-height: 297mm;
-      margin: 0;
-      padding: 0;
-      background: white;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    }
+    // Create PDF
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+    });
     
-    @media print {
-      html, body {
-        width: 210mm;
-        height: 297mm;
-      }
+    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+    const imgWidth = A4_WIDTH_MM;
+    const imgHeight = (canvas.height * A4_WIDTH_MM) / canvas.width;
+    
+    // Add image to PDF - handle multi-page
+    if (pageCount === 1) {
+      pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
+    } else {
+      // Multi-page: Split the canvas into pages
+      const pageHeightPx = A4_HEIGHT_PX * scale;
       
-      .resume-page {
-        width: 210mm;
-        min-height: 297mm;
-        page-break-after: always;
-        page-break-inside: avoid;
+      for (let i = 0; i < pageCount; i++) {
+        if (i > 0) {
+          pdf.addPage();
+        }
+        
+        // Create a canvas for this page
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = Math.min(pageHeightPx, canvas.height - (i * pageHeightPx));
+        
+        const ctx = pageCanvas.getContext('2d');
+        if (ctx) {
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+          ctx.drawImage(
+            canvas,
+            0, i * pageHeightPx,
+            canvas.width, pageCanvas.height,
+            0, 0,
+            canvas.width, pageCanvas.height
+          );
+        }
+        
+        const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.95);
+        const pageImgHeight = (pageCanvas.height * A4_WIDTH_MM) / pageCanvas.width;
+        pdf.addImage(pageImgData, 'JPEG', 0, 0, imgWidth, pageImgHeight);
       }
     }
     
-    .resume-page {
-      width: 210mm;
-      min-height: 297mm;
-      background: white;
-      margin: 0 auto;
+    // Download PDF
+    pdf.save(`${filename}.pdf`);
+    
+  } finally {
+    // Clean up
+    if (clone.parentNode) {
+      clone.parentNode.removeChild(clone);
     }
-    
-    /* Typography */
-    h1 { font-size: 24pt; font-weight: 700; }
-    h2 { font-size: 11pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; }
-    h3 { font-size: 12pt; font-weight: 700; }
-    p, li, span { font-size: 10pt; line-height: 1.45; }
-    
-    /* Print-specific overrides */
-    .no-print { display: none !important; }
-    
-    /* Ensure backgrounds print */
-    * {
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-  </style>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
-</head>
-<body>
-  <div class="resume-page">
-    ${resumeContent}
-  </div>
-  <script>
-    // Auto-print when loaded
-    window.onload = function() {
-      setTimeout(function() {
-        window.print();
-        // Close after a delay to allow print dialog
-        setTimeout(function() {
-          window.close();
-        }, 1000);
-      }, 500);
-    };
-  </script>
-</body>
-</html>
-  `;
-  
-  printWindow.document.open();
-  printWindow.document.write(printDocument);
-  printWindow.document.close();
+  }
 };
 
 /**
- * Generates a print-ready preview element
+ * Alternative export using direct canvas rendering for resume element
  */
-export const createPrintPreview = (
-  resumeElement: HTMLElement,
-  scale: number = 1
-): HTMLElement => {
-  const preview = document.createElement("div");
-  preview.style.cssText = `
-    width: ${A4_WIDTH_PX * scale}px;
-    height: ${A4_HEIGHT_PX * scale}px;
-    background: white;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
-    overflow: hidden;
-    transform-origin: top left;
-  `;
+export const exportResumeCanvas = async (
+  canvasElement: HTMLElement,
+  filename: string = "Resume"
+): Promise<void> => {
+  const scale = 2;
   
-  const content = resumeElement.cloneNode(true) as HTMLElement;
-  content.style.cssText = `
-    transform: scale(${scale});
-    transform-origin: top left;
-    width: ${A4_WIDTH_PX}px;
-    min-height: ${A4_HEIGHT_PX}px;
-  `;
+  const canvas = await html2canvas(canvasElement, {
+    scale: scale,
+    useCORS: true,
+    allowTaint: true,
+    backgroundColor: '#ffffff',
+    logging: false,
+  });
   
-  preview.appendChild(content);
-  return preview;
+  const contentHeight = canvas.height / scale;
+  const pageCount = Math.ceil(contentHeight / A4_HEIGHT_PX);
+  
+  const pdf = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4',
+  });
+  
+  if (pageCount === 1) {
+    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+    pdf.addImage(imgData, 'JPEG', 0, 0, A4_WIDTH_MM, A4_HEIGHT_MM);
+  } else {
+    const pageHeightPx = A4_HEIGHT_PX * scale;
+    
+    for (let i = 0; i < pageCount; i++) {
+      if (i > 0) {
+        pdf.addPage();
+      }
+      
+      const pageCanvas = document.createElement('canvas');
+      pageCanvas.width = canvas.width;
+      pageCanvas.height = Math.min(pageHeightPx, canvas.height - (i * pageHeightPx));
+      
+      const ctx = pageCanvas.getContext('2d');
+      if (ctx) {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+        ctx.drawImage(
+          canvas,
+          0, i * pageHeightPx,
+          canvas.width, pageCanvas.height,
+          0, 0,
+          canvas.width, pageCanvas.height
+        );
+      }
+      
+      const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.95);
+      const pageImgHeight = (pageCanvas.height * A4_WIDTH_MM) / pageCanvas.width;
+      pdf.addImage(pageImgData, 'JPEG', 0, 0, A4_WIDTH_MM, pageImgHeight);
+    }
+  }
+  
+  pdf.save(`${filename}.pdf`);
 };
 
 /**

@@ -160,31 +160,37 @@ const Editor = () => {
   const handleExportPDF = async () => {
     toast({ 
       title: "Preparing PDF", 
-      description: "Opening print dialog..." 
+      description: "Generating high-quality PDF..." 
     });
     
-    const printContainer = document.createElement("div");
-    printContainer.id = "pdf-print-container";
-    printContainer.style.position = "fixed";
-    printContainer.style.left = "-9999px";
-    printContainer.style.top = "0";
-    document.body.appendChild(printContainer);
+    // Find the resume preview element
+    const resumePreview = document.querySelector('[data-resume-preview]') as HTMLElement;
+    if (!resumePreview) {
+      toast({ 
+        title: "Error", 
+        description: "Could not find resume preview. Please try again.",
+        variant: "destructive" 
+      });
+      return;
+    }
     
     try {
-      const previewElement = document.createElement("div");
-      previewElement.innerHTML = `
-        <div style="width: 210mm; min-height: 297mm; background: white; font-family: Inter, sans-serif;">
-          ${document.querySelector('[data-resume-preview]')?.innerHTML || ''}
-        </div>
-      `;
-      printContainer.appendChild(previewElement);
-      
-      await exportToPDF(previewElement, currentTemplate, resumeData, {
+      await exportToPDF(resumePreview, currentTemplate, resumeData, {
         format: "pdf",
         filename: `${resumeData.personalInfo.name.replace(/\s+/g, "_")}_Resume`
       });
-    } finally {
-      document.body.removeChild(printContainer);
+      
+      toast({ 
+        title: "PDF Downloaded!", 
+        description: "Your resume has been saved as PDF." 
+      });
+    } catch (error) {
+      console.error("PDF export error:", error);
+      toast({ 
+        title: "Export Failed", 
+        description: "There was an error generating the PDF. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -487,7 +493,7 @@ const Editor = () => {
         />
 
         {/* Live Preview Canvas with Inline Editing */}
-        <div ref={previewRef} data-resume-preview className="flex-1">
+        <div ref={previewRef} className="flex-1">
           <InlineSlateCanvas
             template={currentTemplate}
             data={resumeData}
@@ -496,6 +502,12 @@ const Editor = () => {
             sectionOrder={sectionOrder}
             onSectionOrderChange={setSectionOrder}
             onExportPDF={handleExportPDF}
+            atsScore={atsScore}
+            atsAnimatedScore={animatedScore}
+            atsBreakdown={atsBreakdown}
+            atsFeedback={atsFeedback}
+            atsSectionSignals={sectionSignals}
+            atsIsHighScore={isHighScore}
           />
         </div>
 
