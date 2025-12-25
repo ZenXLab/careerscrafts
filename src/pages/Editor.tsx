@@ -380,6 +380,12 @@ const Editor = () => {
               designSettings={designSettings}
               sectionOrder={sectionOrder}
               readOnly
+              atsScore={atsScore}
+              atsAnimatedScore={animatedScore}
+              atsBreakdown={atsBreakdown}
+              atsFeedback={atsFeedback}
+              atsSectionSignals={sectionSignals}
+              atsIsHighScore={isHighScore}
             />
           </div>
         </div>
