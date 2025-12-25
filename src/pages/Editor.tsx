@@ -19,7 +19,7 @@ import PDFUploadModal from "@/components/editor/PDFUploadModal";
 import VersionCompareModal from "@/components/editor/VersionCompareModal";
 import TemplateSwitchModal from "@/components/editor/TemplateSwitchModal";
 import ATSScoreWidget from "@/components/editor/ATSScoreWidget";
-import ProfilePhotoUpload from "@/components/editor/ProfilePhotoUpload";
+
 import ThemeManager from "@/components/editor/ThemeManager";
 import { useATSScore } from "@/hooks/useATSScore";
 import { useResumeVersions } from "@/hooks/useResumeVersions";
@@ -337,6 +337,7 @@ const Editor = () => {
               template={currentTemplate}
               data={resumeData}
               designSettings={designSettings}
+              sectionOrder={sectionOrder}
               readOnly
             />
           </div>
@@ -376,15 +377,6 @@ const Editor = () => {
             isHighScore={isHighScore}
             breakdown={atsBreakdown}
             compact
-          />
-          
-          <div className="h-6 w-px bg-border hidden sm:block" />
-
-          {/* Profile Photo Upload */}
-          <ProfilePhotoUpload
-            currentPhotoUrl={resumeData.personalInfo.photo}
-            onPhotoChange={handleProfilePhotoChange}
-            className="hidden sm:block"
           />
           
           <div className="h-6 w-px bg-border hidden sm:block" />
@@ -454,6 +446,8 @@ const Editor = () => {
             data={resumeData}
             designSettings={designSettings}
             onDataChange={handleResumeDataChange}
+            sectionOrder={sectionOrder}
+            onSectionOrderChange={setSectionOrder}
           />
         </div>
 
