@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { TrendingUp, TrendingDown, Minus, Info, ChevronDown } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, ChevronDown, AlertTriangle, CheckCircle2, Target, BookOpen, FileText, Zap } from "lucide-react";
 
 interface ATSFeedback {
   message: string;
@@ -8,11 +8,20 @@ interface ATSFeedback {
   timestamp: number;
 }
 
+interface ATSScoreBreakdown {
+  structure: number;
+  keywords: number;
+  content: number;
+  readability: number;
+  completeness: number;
+}
+
 interface ATSScoreWidgetProps {
   score: number;
   animatedScore: number;
   feedback: ATSFeedback | null;
   isHighScore: boolean;
+  breakdown?: ATSScoreBreakdown;
   compact?: boolean;
 }
 
@@ -25,15 +34,29 @@ const getScoreGrade = (score: number): { grade: string; color: string; bgColor: 
   return { grade: "D", color: "text-red-500", bgColor: "bg-red-500" };
 };
 
+const getComponentStatus = (score: number) => {
+  if (score >= 80) return { icon: CheckCircle2, color: "text-emerald-500", label: "Strong" };
+  if (score >= 60) return { icon: AlertTriangle, color: "text-yellow-500", label: "Fair" };
+  return { icon: AlertTriangle, color: "text-red-500", label: "Weak" };
+};
+
+const scoreComponents = [
+  { key: "structure" as const, label: "Structure & Format", icon: FileText, tip: "Ensure all required sections are present" },
+  { key: "keywords" as const, label: "Keyword Match", icon: Target, tip: "Match keywords from job descriptions" },
+  { key: "content" as const, label: "Content Quality", icon: Zap, tip: "Use action verbs and quantify achievements" },
+  { key: "readability" as const, label: "Readability", icon: BookOpen, tip: "Keep bullets concise and scannable" },
+];
+
 export const ATSScoreWidget = ({
   score,
   animatedScore,
   feedback,
   isHighScore,
+  breakdown,
   compact = false,
 }: ATSScoreWidgetProps) => {
   const [showDetails, setShowDetails] = useState(false);
-  const { grade, color, bgColor } = getScoreGrade(score);
+  const { grade, color } = getScoreGrade(score);
   
   // Calculate ring progress
   const circumference = 2 * Math.PI * 42;
@@ -168,7 +191,7 @@ export const ATSScoreWidget = ({
           onClick={() => setShowDetails(!showDetails)}
           className="mt-3 w-full flex items-center justify-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
-          <span>{showDetails ? "Hide" : "Show"} details</span>
+          <span>{showDetails ? "Hide" : "Show"} breakdown</span>
           <ChevronDown className={`w-3 h-3 transition-transform ${showDetails ? "rotate-180" : ""}`} />
         </button>
         
@@ -180,22 +203,51 @@ export const ATSScoreWidget = ({
               exit={{ height: 0, opacity: 0 }}
               className="overflow-hidden"
             >
-              <div className="mt-3 pt-3 border-t border-border/50 space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Structure & Format</span>
-                  <span className="font-medium">—</span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Keyword Match</span>
-                  <span className="font-medium">—</span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Content Quality</span>
-                  <span className="font-medium">—</span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Readability</span>
-                  <span className="font-medium">—</span>
+              <div className="mt-3 pt-3 border-t border-border/50 space-y-3">
+                {scoreComponents.map(({ key, label, icon: Icon, tip }) => {
+                  const componentScore = breakdown?.[key] ?? 0;
+                  const status = getComponentStatus(componentScore);
+                  const StatusIcon = status.icon;
+                  
+                  return (
+                    <div key={key} className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-xs">
+                          <Icon className="w-3.5 h-3.5 text-muted-foreground" />
+                          <span className="text-muted-foreground">{label}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className={`text-xs font-medium ${status.color}`}>{componentScore}</span>
+                          <StatusIcon className={`w-3 h-3 ${status.color}`} />
+                        </div>
+                      </div>
+                      {/* Progress bar */}
+                      <div className="h-1.5 bg-muted/30 rounded-full overflow-hidden">
+                        <motion.div
+                          className={`h-full rounded-full ${
+                            componentScore >= 80 ? "bg-emerald-500" : 
+                            componentScore >= 60 ? "bg-yellow-500" : "bg-red-500"
+                          }`}
+                          initial={{ width: 0 }}
+                          animate={{ width: `${componentScore}%` }}
+                          transition={{ duration: 0.5, delay: 0.1 }}
+                        />
+                      </div>
+                      <p className="text-[10px] text-muted-foreground/70">{tip}</p>
+                    </div>
+                  );
+                })}
+                
+                {/* Overall recommendation */}
+                <div className="mt-4 p-2 rounded-lg bg-muted/30 text-xs text-muted-foreground">
+                  <strong className="text-foreground">💡 Top Priority:</strong>{" "}
+                  {breakdown && breakdown.keywords < 70 
+                    ? "Add more industry-specific keywords to match job descriptions."
+                    : breakdown && breakdown.content < 70
+                    ? "Quantify achievements with metrics (%, $, numbers)."
+                    : breakdown && breakdown.structure < 70
+                    ? "Complete all required resume sections."
+                    : "Your resume is well-optimized. Fine-tune details for perfection."}
                 </div>
               </div>
             </motion.div>
