@@ -8,7 +8,7 @@ import { getResumeForTemplate } from "@/data/resumeProfiles";
 import { useToast } from "@/hooks/use-toast";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import EditorSidebar from "@/components/editor/EditorSidebar";
-import ResumeCanvas from "@/components/editor/ResumeCanvas";
+import InlineSlateCanvas from "@/components/editor/canvas/InlineSlateCanvas";
 import ContextualPanel from "@/components/editor/ContextualPanel";
 import AddSectionModal from "@/components/editor/AddSectionModal";
 import RearrangeSectionsModal from "@/components/editor/RearrangeSectionsModal";
@@ -374,7 +374,7 @@ const Editor = () => {
             </p>
           </div>
           <div ref={previewRef} data-resume-preview className="pointer-events-none">
-            <ResumeCanvas
+            <InlineSlateCanvas
               template={currentTemplate}
               data={resumeData}
               designSettings={designSettings}
@@ -482,7 +482,7 @@ const Editor = () => {
 
         {/* Live Preview Canvas with Inline Editing */}
         <div ref={previewRef} data-resume-preview className="flex-1">
-          <ResumeCanvas
+          <InlineSlateCanvas
             template={currentTemplate}
             data={resumeData}
             designSettings={designSettings}
