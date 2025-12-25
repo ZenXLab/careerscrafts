@@ -5,13 +5,7 @@ import { Button } from "@/components/ui/button";
 import { templates } from "@/data/templates";
 import TemplatePreview from "@/components/TemplatePreview";
 import TemplateGalleryCard from "@/components/TemplateGalleryCard";
-import { 
-  sampleResumeData, 
-  sampleResumeDataEngineer, 
-  sampleResumeDataDesigner, 
-  sampleResumeDataExecutive,
-  heroResumeData
-} from "@/types/resume";
+import { getResumeForTemplate } from "@/data/resumeProfiles";
 import { TemplateConfig } from "@/types/resume";
 
 // Industry sections for organized display
@@ -52,14 +46,6 @@ const industrySections = [
     icon: "🚀"
   }
 ];
-
-const getSampleDataForTemplate = (template: TemplateConfig, index: number) => {
-  const samples = [sampleResumeData, sampleResumeDataEngineer, sampleResumeDataDesigner, sampleResumeDataExecutive, heroResumeData];
-  if (template.category === "technical") return index % 2 === 0 ? sampleResumeDataEngineer : heroResumeData;
-  if (template.category === "creative") return sampleResumeDataDesigner;
-  if (template.category === "executive") return sampleResumeDataExecutive;
-  return samples[index % samples.length];
-};
 
 const Templates = () => {
   const [activeFilter, setActiveFilter] = useState<string>("all");
@@ -182,7 +168,7 @@ const Templates = () => {
                     <TemplateGalleryCard
                       key={template.id}
                       template={template}
-                      data={getSampleDataForTemplate(template, index)}
+                      data={getResumeForTemplate(template.id)}
                       index={index}
                       onClick={() => setSelectedTemplate(template)}
                     />
@@ -239,8 +225,8 @@ const Templates = () => {
               <div className="flex-1 bg-gradient-to-br from-muted/30 to-muted/10 p-6 sm:p-10 overflow-auto flex items-start justify-center min-h-[50vh] lg:min-h-0">
                 <div className="shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5)] rounded-sm">
                   <TemplatePreview 
-                    template={selectedTemplate} 
-                    data={getSampleDataForTemplate(selectedTemplate, 0)} 
+                    template={{ ...selectedTemplate, pages: 1 }}
+                    data={getResumeForTemplate(selectedTemplate.id)} 
                     scale={0.55}
                   />
                 </div>
@@ -276,10 +262,10 @@ const Templates = () => {
                 <div className="space-y-3 mb-6 flex-1">
                   {[
                     ["Format", selectedTemplate.category.charAt(0).toUpperCase() + selectedTemplate.category.slice(1)],
-                    ["Pages", `${selectedTemplate.pages} page${selectedTemplate.pages > 1 ? "s" : ""}`],
+                    ["Pages", "1 page"],
                     ["Layout", selectedTemplate.layout.replace("-", " ").replace(/\b\w/g, c => c.toUpperCase())],
                     ["Photo", selectedTemplate.hasPhoto ? "Included" : "No photo"],
-                    ["ATS Score", "Optimized"]
+                    ["ATS Score", "94%"]
                   ].map(([label, value]) => (
                     <div key={label} className="flex items-center justify-between py-2 border-b border-border/30">
                       <span className="text-xs text-muted-foreground">{label}</span>
@@ -291,7 +277,7 @@ const Templates = () => {
                 </div>
 
                 <div className="space-y-2.5 mt-auto">
-                  <Link to={`/onboarding?template=${selectedTemplate.id}`} className="block">
+                  <Link to={`/editor?template=${selectedTemplate.id}`} className="block">
                     <Button variant="hero" size="lg" className="w-full text-sm">
                       Use This Template
                     </Button>
