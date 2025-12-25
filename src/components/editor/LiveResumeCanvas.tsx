@@ -1,13 +1,29 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Maximize2, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ResumeData, TemplateConfig } from "@/types/resume";
 import { DesignSettings } from "./DesignPanel";
-import { DndContext, closestCenter, DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
+import { 
+  DndContext, 
+  closestCenter, 
+  DragEndEvent, 
+  PointerSensor, 
+  useSensor, 
+  useSensors,
+  DragOverlay,
+  DragStartEvent,
+  UniqueIdentifier,
+} from "@dnd-kit/core";
+import { 
+  SortableContext, 
+  verticalListSortingStrategy, 
+  arrayMove,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import SectionWrapper from "./SectionWrapper";
-import InlineEditableField from "./InlineEditableField";
+import SlateInlineField from "./slate/SlateInlineField";
 
 // A4 dimensions at 96 DPI (LOCKED)
 const A4_WIDTH = 794;
@@ -22,6 +38,61 @@ interface LiveResumeCanvasProps {
   onSectionOrderChange?: (order: string[]) => void;
 }
 
+// Sortable bullet component for drag-and-drop within experience
+interface SortableBulletProps {
+  id: string;
+  bullet: string;
+  expIdx: number;
+  bulletIdx: number;
+  accentColor: string;
+  role: string;
+  onFieldChange: (field: string, value: string) => void;
+}
+
+const SortableBullet = ({ id, bullet, expIdx, bulletIdx, accentColor, role, onFieldChange }: SortableBulletProps) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <li
+      ref={setNodeRef}
+      style={style}
+      className="flex text-gray-700 text-[10pt] group"
+    >
+      {/* Drag handle */}
+      <button
+        {...attributes}
+        {...listeners}
+        className="mr-1 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 -ml-4"
+        title="Drag to reorder"
+      >
+        <GripVertical className="w-3 h-3" />
+      </button>
+      <span className="mr-2 shrink-0" style={{ color: accentColor }}>▸</span>
+      <SlateInlineField
+        value={bullet}
+        onChange={(value) => onFieldChange(`experience.${expIdx}.bullets.${bulletIdx}`, value)}
+        placeholder="Enter bullet point..."
+        role={role}
+        accentColor={accentColor}
+        className="flex-1"
+      />
+    </li>
+  );
+};
+
 const LiveResumeCanvas = ({ 
   template, 
   data, 
@@ -32,6 +103,7 @@ const LiveResumeCanvas = ({
 }: LiveResumeCanvasProps) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [zoom, setZoom] = useState(0.8);
+  const [activeBulletId, setActiveBulletId] = useState<UniqueIdentifier | null>(null);
   const totalPages = template.pages;
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -40,7 +112,7 @@ const LiveResumeCanvas = ({
     externalSectionOrder || ["summary", "skills", "experience", "education"]
   );
 
-  // DnD sensors
+  // DnD sensors - separate for sections and bullets
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -89,11 +161,17 @@ const LiveResumeCanvas = ({
   };
 
   // Handle section drag end with ATS guardrails
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleSectionDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (over && active.id !== over.id) {
+      // Check if this is a section drag (not a bullet drag)
+      const activeIdStr = String(active.id);
+      if (activeIdStr.startsWith("bullet-")) return;
+
       const oldIndex = sectionOrder.indexOf(active.id as string);
       const newIndex = sectionOrder.indexOf(over.id as string);
+      
+      if (oldIndex === -1 || newIndex === -1) return;
       
       const newOrder = arrayMove(sectionOrder, oldIndex, newIndex);
       
@@ -139,6 +217,19 @@ const LiveResumeCanvas = ({
       newData.education = [...newData.education];
       newData.education[eduIdx] = { ...newData.education[eduIdx], [eduField]: value };
     }
+    
+    onDataChange(newData);
+  }, [data, onDataChange]);
+
+  // Handle bullet reordering within an experience entry
+  const handleBulletReorder = useCallback((expIdx: number, oldBulletIdx: number, newBulletIdx: number) => {
+    if (!onDataChange) return;
+    
+    const newData = { ...data };
+    newData.experience = [...newData.experience];
+    const exp = { ...newData.experience[expIdx] };
+    exp.bullets = arrayMove(exp.bullets, oldBulletIdx, newBulletIdx);
+    newData.experience[expIdx] = exp;
     
     onDataChange(newData);
   }, [data, onDataChange]);
@@ -301,7 +392,7 @@ const LiveResumeCanvas = ({
               <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
+                onDragEnd={handleSectionDragEnd}
               >
                 <InlineResumeDocument 
                   template={template}
@@ -309,6 +400,7 @@ const LiveResumeCanvas = ({
                   settings={settings}
                   sectionOrder={sectionOrder}
                   onFieldChange={handleFieldChange}
+                  onBulletReorder={handleBulletReorder}
                 />
               </DndContext>
             </div>
@@ -319,7 +411,7 @@ const LiveResumeCanvas = ({
       {/* Status Bar */}
       <div className="hidden sm:flex items-center justify-between px-4 py-2 border-t border-border/50 bg-card/50 backdrop-blur-sm flex-shrink-0">
         <span className="text-xs text-muted-foreground">
-          {template.name} • A4 • Click text to edit • Drag sections to reorder
+          {template.name} • A4 • Slate.js Editor • Drag sections & bullets to reorder
         </span>
         <span className="text-xs text-muted-foreground">
           Auto-saved
@@ -329,14 +421,98 @@ const LiveResumeCanvas = ({
   );
 };
 
-// Inline Editable Resume Document
+// Inline Editable Resume Document with Slate
 interface InlineResumeDocumentProps {
   template: TemplateConfig;
   data: ResumeData;
   settings: DesignSettings;
   sectionOrder: string[];
   onFieldChange: (field: string, value: string) => void;
+  onBulletReorder: (expIdx: number, oldIdx: number, newIdx: number) => void;
 }
+
+// Experience entry with sortable bullets
+interface ExperienceEntryProps {
+  exp: ResumeData["experience"][0];
+  expIdx: number;
+  accentColor: string;
+  onFieldChange: (field: string, value: string) => void;
+  onBulletReorder: (expIdx: number, oldIdx: number, newIdx: number) => void;
+}
+
+const ExperienceEntry = ({ exp, expIdx, accentColor, onFieldChange, onBulletReorder }: ExperienceEntryProps) => {
+  const bulletIds = exp.bullets.map((_, idx) => `bullet-${exp.id}-${idx}`);
+  
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 5 },
+    })
+  );
+
+  const handleBulletDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIdx = bulletIds.indexOf(String(active.id));
+    const newIdx = bulletIds.indexOf(String(over.id));
+    
+    if (oldIdx !== -1 && newIdx !== -1) {
+      onBulletReorder(expIdx, oldIdx, newIdx);
+    }
+  };
+
+  return (
+    <div>
+      <div className="flex justify-between items-baseline">
+        <SlateInlineField
+          value={exp.position}
+          onChange={(value) => onFieldChange(`experience.${expIdx}.position`, value)}
+          placeholder="Job Title"
+          accentColor={accentColor}
+          className="font-bold text-gray-900 text-[12pt]"
+        />
+        <span className="text-[9pt] text-gray-500 font-medium shrink-0 ml-2">
+          {exp.startDate} — {exp.current ? "Present" : exp.endDate}
+        </span>
+      </div>
+      <div className="flex justify-between items-baseline mb-1">
+        <SlateInlineField
+          value={exp.company}
+          onChange={(value) => onFieldChange(`experience.${expIdx}.company`, value)}
+          placeholder="Company Name"
+          accentColor={accentColor}
+          className="font-semibold text-[10pt]"
+          style={{ color: accentColor }}
+        />
+        <span className="text-[9pt] text-gray-500 shrink-0 ml-2">{exp.location}</span>
+      </div>
+      
+      {/* Sortable Bullets */}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleBulletDragEnd}
+      >
+        <SortableContext items={bulletIds} strategy={verticalListSortingStrategy}>
+          <ul className="space-y-1 mt-2 pl-4">
+            {exp.bullets.map((bullet, bulletIdx) => (
+              <SortableBullet
+                key={`bullet-${exp.id}-${bulletIdx}`}
+                id={`bullet-${exp.id}-${bulletIdx}`}
+                bullet={bullet}
+                expIdx={expIdx}
+                bulletIdx={bulletIdx}
+                accentColor={accentColor}
+                role={exp.position}
+                onFieldChange={onFieldChange}
+              />
+            ))}
+          </ul>
+        </SortableContext>
+      </DndContext>
+    </div>
+  );
+};
 
 const InlineResumeDocument = ({ 
   template, 
@@ -344,9 +520,9 @@ const InlineResumeDocument = ({
   settings, 
   sectionOrder,
   onFieldChange,
+  onBulletReorder,
 }: InlineResumeDocumentProps) => {
   const accentColor = settings.accentColor || template.accentColor;
-  const fontScale = settings.fontSize / 100;
   const sectionGap = settings.sectionSpacing;
 
   // Render sections in order
@@ -360,12 +536,12 @@ const InlineResumeDocument = ({
             title="Professional Summary"
             accentColor={accentColor}
           >
-            <InlineEditableField
+            <SlateInlineField
               value={data.summary}
               onChange={(value) => onFieldChange("summary", value)}
-              fieldType="textarea"
               role={data.personalInfo.title}
               multiline
+              accentColor={accentColor}
               className="text-gray-700 leading-relaxed text-[10pt]"
               placeholder="Write a compelling professional summary..."
             />
@@ -412,43 +588,14 @@ const InlineResumeDocument = ({
           >
             <div className="space-y-4">
               {data.experience.map((exp, expIdx) => (
-                <div key={exp.id}>
-                  <div className="flex justify-between items-baseline">
-                    <InlineEditableField
-                      value={exp.position}
-                      onChange={(value) => onFieldChange(`experience.${expIdx}.position`, value)}
-                      fieldType="text"
-                      className="font-bold text-gray-900 text-[12pt]"
-                    />
-                    <span className="text-[9pt] text-gray-500 font-medium shrink-0 ml-2">
-                      {exp.startDate} — {exp.current ? "Present" : exp.endDate}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-baseline mb-1">
-                    <InlineEditableField
-                      value={exp.company}
-                      onChange={(value) => onFieldChange(`experience.${expIdx}.company`, value)}
-                      fieldType="text"
-                      className="font-semibold text-[10pt]"
-                      style={{ color: accentColor }}
-                    />
-                    <span className="text-[9pt] text-gray-500 shrink-0 ml-2">{exp.location}</span>
-                  </div>
-                  <ul className="space-y-1 mt-2">
-                    {exp.bullets.map((bullet, bulletIdx) => (
-                      <li key={bulletIdx} className="flex text-gray-700 text-[10pt]">
-                        <span className="mr-2 text-gray-400 shrink-0">▸</span>
-                        <InlineEditableField
-                          value={bullet}
-                          onChange={(value) => onFieldChange(`experience.${expIdx}.bullets.${bulletIdx}`, value)}
-                          fieldType="bullet"
-                          role={exp.position}
-                          className="flex-1"
-                        />
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                <ExperienceEntry
+                  key={exp.id}
+                  exp={exp}
+                  expIdx={expIdx}
+                  accentColor={accentColor}
+                  onFieldChange={onFieldChange}
+                  onBulletReorder={onBulletReorder}
+                />
               ))}
             </div>
           </SectionWrapper>
@@ -466,10 +613,11 @@ const InlineResumeDocument = ({
               {data.education.map((edu, eduIdx) => (
                 <div key={edu.id}>
                   <div className="flex justify-between items-baseline">
-                    <InlineEditableField
+                    <SlateInlineField
                       value={edu.degree}
                       onChange={(value) => onFieldChange(`education.${eduIdx}.degree`, value)}
-                      fieldType="text"
+                      placeholder="Degree"
+                      accentColor={accentColor}
                       className="font-bold text-gray-900 text-[11pt]"
                     />
                     <span className="text-[9pt] text-gray-500 shrink-0 ml-2">
@@ -477,10 +625,11 @@ const InlineResumeDocument = ({
                     </span>
                   </div>
                   <div className="flex justify-between items-baseline">
-                    <InlineEditableField
+                    <SlateInlineField
                       value={edu.school}
                       onChange={(value) => onFieldChange(`education.${eduIdx}.school`, value)}
-                      fieldType="text"
+                      placeholder="School Name"
+                      accentColor={accentColor}
                       className="text-[10pt]"
                       style={{ color: accentColor }}
                     />
@@ -510,16 +659,18 @@ const InlineResumeDocument = ({
     >
       {/* Header - Always at top, not draggable */}
       <header className="text-center mb-6 pb-4 border-b-2" style={{ borderColor: accentColor }}>
-        <InlineEditableField
+        <SlateInlineField
           value={data.personalInfo.name}
           onChange={(value) => onFieldChange("personalInfo.name", value)}
-          fieldType="text"
+          placeholder="Your Name"
+          accentColor={accentColor}
           className="text-2xl font-bold text-gray-900 block"
         />
-        <InlineEditableField
+        <SlateInlineField
           value={data.personalInfo.title}
           onChange={(value) => onFieldChange("personalInfo.title", value)}
-          fieldType="text"
+          placeholder="Your Title"
+          accentColor={accentColor}
           className="text-sm font-medium mt-1 block"
           style={{ color: accentColor }}
         />
