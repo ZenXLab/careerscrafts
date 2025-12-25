@@ -97,19 +97,25 @@ const availableSections = [
 ];
 
 const AddSectionModal = ({ isOpen, onClose, onAddSection, existingSections }: AddSectionModalProps) => {
+  // Filter out already added sections
+  const availableToAdd = availableSections.filter(section => !existingSections.includes(section.id));
+
   return (
     <AnimatePresence>
       {isOpen && (
-        <>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
           <motion.div 
-            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50"
+            className="absolute inset-0 bg-background/80 backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
           />
+          
+          {/* Modal - Centered */}
           <motion.div 
-            className="fixed inset-4 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[700px] md:max-h-[80vh] bg-card border border-border rounded-xl shadow-2xl z-50 overflow-hidden flex flex-col"
+            className="relative w-full max-w-[700px] max-h-[80vh] bg-card border border-border rounded-xl shadow-2xl overflow-hidden flex flex-col"
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -119,7 +125,11 @@ const AddSectionModal = ({ isOpen, onClose, onAddSection, existingSections }: Ad
             <div className="flex items-center justify-between p-4 border-b border-border">
               <div>
                 <h2 className="text-lg font-semibold">Add Section</h2>
-                <p className="text-sm text-muted-foreground">Choose a section to add to your resume</p>
+                <p className="text-sm text-muted-foreground">
+                  {availableToAdd.length > 0 
+                    ? `Choose from ${availableToAdd.length} available sections` 
+                    : "All sections have been added"}
+                </p>
               </div>
               <Button variant="ghost" size="icon" onClick={onClose}>
                 <X className="w-4 h-4" />
@@ -128,25 +138,24 @@ const AddSectionModal = ({ isOpen, onClose, onAddSection, existingSections }: Ad
 
             {/* Section Grid */}
             <div className="p-4 overflow-y-auto flex-1">
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {availableSections.map((section) => {
-                  const isAdded = existingSections.includes(section.id);
-                  return (
+              {availableToAdd.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>You've added all available sections!</p>
+                  <p className="text-sm mt-1">Remove a section first to add it again.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {availableToAdd.map((section) => (
                     <motion.button
                       key={section.id}
-                      onClick={() => !isAdded && onAddSection(section.id)}
-                      disabled={isAdded}
-                      className={`p-4 rounded-lg border text-left transition-all ${
-                        isAdded 
-                          ? "border-border/30 bg-muted/30 opacity-50 cursor-not-allowed" 
-                          : "border-border hover:border-primary/50 hover:bg-secondary/50"
-                      }`}
-                      whileHover={!isAdded ? { scale: 1.02 } : {}}
-                      whileTap={!isAdded ? { scale: 0.98 } : {}}
+                      onClick={() => onAddSection(section.id)}
+                      className="p-4 rounded-lg border text-left transition-all border-border hover:border-primary/50 hover:bg-secondary/50"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                     >
                       <div className="flex items-start gap-3">
-                        <div className={`p-2 rounded-lg ${isAdded ? "bg-muted" : "bg-primary/10"}`}>
-                          <section.icon className={`w-4 h-4 ${isAdded ? "text-muted-foreground" : "text-primary"}`} />
+                        <div className="p-2 rounded-lg bg-primary/10">
+                          <section.icon className="w-4 h-4 text-primary" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="font-medium text-sm truncate">{section.name}</h3>
@@ -157,13 +166,10 @@ const AddSectionModal = ({ isOpen, onClose, onAddSection, existingSections }: Ad
                       <div className="mt-3 p-2 bg-muted/50 rounded text-[10px] text-muted-foreground truncate">
                         {section.preview}
                       </div>
-                      {isAdded && (
-                        <span className="text-[10px] text-muted-foreground mt-2 block">Already added</span>
-                      )}
                     </motion.button>
-                  );
-                })}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Footer */}
@@ -173,7 +179,7 @@ const AddSectionModal = ({ isOpen, onClose, onAddSection, existingSections }: Ad
               </p>
             </div>
           </motion.div>
-        </>
+        </div>
       )}
     </AnimatePresence>
   );

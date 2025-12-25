@@ -6,6 +6,7 @@ import { templates, getTemplateById } from "@/data/templates";
 import { ResumeData, TemplateConfig } from "@/types/resume";
 import { getResumeForTemplate } from "@/data/resumeProfiles";
 import { useToast } from "@/hooks/use-toast";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import EditorSidebar from "@/components/editor/EditorSidebar";
 import LiveResumeCanvas from "@/components/editor/LiveResumeCanvas";
 import ContextualPanel from "@/components/editor/ContextualPanel";
@@ -35,6 +36,7 @@ const Editor = () => {
   const isMobile = useIsMobile();
   
   const [resumeData, setResumeData] = useState<ResumeData>(getResumeForTemplate(templateId));
+  const [previousData, setPreviousData] = useState<ResumeData | null>(null);
   
   // ATS Score Hook
   const { 
@@ -84,7 +86,7 @@ const Editor = () => {
   
   // Sections for modals
   const [resumeSections, setResumeSections] = useState([
-    { id: "header", name: "Header", removable: false },
+    { id: "header", name: "Header", removable: false, locked: true },
     { id: "summary", name: "Professional Summary", removable: false },
     { id: "experience", name: "Experience", removable: false },
     { id: "education", name: "Education", removable: true },
@@ -92,6 +94,40 @@ const Editor = () => {
   ]);
 
   const [existingSections, setExistingSections] = useState<string[]>([]);
+
+  // Close all modals helper
+  const closeAllModals = useCallback(() => {
+    setShowAddSection(false);
+    setShowRearrange(false);
+    setShowAiGenerate(false);
+    setShowDesignPanel(false);
+    setShowPdfUpload(false);
+    setShowVersionCompare(false);
+    setShowTemplateSwitch(false);
+    setContextualPanelMode(null);
+  }, []);
+
+  // Handle save
+  const handleSave = useCallback(() => {
+    saveVersion(resumeData, atsScore);
+    toast({ title: "Saved!", description: "Your resume has been saved." });
+  }, [resumeData, atsScore, saveVersion, toast]);
+
+  // Handle undo
+  const handleUndo = useCallback(() => {
+    if (previousData) {
+      setResumeData(previousData);
+      toast({ title: "Undone", description: "Last change has been reverted." });
+    }
+  }, [previousData, toast]);
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts({
+    onSave: handleSave,
+    onUndo: handleUndo,
+    onExport: () => handleExportPDF(),
+    onEscape: closeAllModals,
+  });
 
   // Update sidebar state when screen size changes
   useEffect(() => {
@@ -103,10 +139,11 @@ const Editor = () => {
     recalculateATS(resumeData);
   }, [resumeData, recalculateATS]);
 
-  // Handle resume data changes with debounce
+  // Handle resume data changes with undo support
   const handleResumeDataChange = useCallback((newData: ResumeData) => {
+    setPreviousData(resumeData);
     setResumeData(newData);
-  }, []);
+  }, [resumeData]);
 
   const handleExportPDF = async () => {
     toast({ 
@@ -160,8 +197,8 @@ const Editor = () => {
 
   const handleReorderSections = (newOrder: typeof resumeSections) => {
     setResumeSections(newOrder);
+    // Update section order for preview - filter out 'header' which is always at top
     setSectionOrder(newOrder.filter(s => s.id !== 'header').map(s => s.id));
-    toast({ title: "Sections reordered" });
   };
 
   const handleAiGenerate = (generatedData: ResumeData) => {
