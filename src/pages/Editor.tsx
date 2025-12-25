@@ -1,17 +1,31 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { templates, getTemplateById } from "@/data/templates";
-import { sampleResumeData, ResumeData } from "@/types/resume";
+import { ResumeData } from "@/types/resume";
+import { getResumeForTemplate } from "@/data/resumeProfiles";
 import TemplatePreview from "@/components/TemplatePreview";
-
+import { useToast } from "@/hooks/use-toast";
 const Editor = () => {
   const [searchParams] = useSearchParams();
   const templateId = searchParams.get("template") || "modern-minimal";
   const template = getTemplateById(templateId) || templates[0];
+  const { toast } = useToast();
   
-  const [resumeData, setResumeData] = useState<ResumeData>(sampleResumeData);
+  const [resumeData, setResumeData] = useState<ResumeData>(getResumeForTemplate(templateId));
+  const [atsScore, setAtsScore] = useState(82);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (atsScore < 94) setAtsScore(prev => Math.min(prev + 1, 94));
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [resumeData, atsScore]);
+
+  const handleExport = () => {
+    toast({ title: "Export ready", description: "Your resume is ready for download." });
+  };
   const [activeSection, setActiveSection] = useState<string>("personal");
 
   const sections = [
