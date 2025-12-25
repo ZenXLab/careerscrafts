@@ -2,54 +2,172 @@ import { BaseEditor, Descendant } from "slate";
 import { ReactEditor } from "slate-react";
 import { HistoryEditor } from "slate-history";
 
-// Custom marks (formatting that can be applied to any text)
-export type CustomMark = {
+// ============================================
+// CAREERSCRAFT SLATE SCHEMA (ATS-SAFE, LOCKED)
+// ============================================
+
+// Text leaf with ATS-safe marks only
+export type TextNode = {
+  text: string;
   bold?: boolean;
   italic?: boolean;
-  accent?: boolean;
-  muted?: boolean;
+  accent?: boolean;  // For headings/accent color
+  muted?: boolean;   // For dates/metadata
 };
 
-// Custom text node
-export type CustomText = {
-  text: string;
-} & CustomMark;
+// Alias for compatibility
+export type CustomText = TextNode;
+export type CustomMark = Omit<TextNode, "text">;
 
-// Resume-specific element types
-export type HeaderElement = {
+// Contact information structure
+export type ContactInfo = {
+  email: string;
+  phone?: string;
+  linkedin?: string;
+  website?: string;
+};
+
+// Resume document metadata
+export type ResumeMeta = {
+  role: string;
+  industry: string;
+  experienceLevel: "student" | "fresher" | "professional" | "senior" | "executive";
+  region: string;
+};
+
+// ============================================
+// CORE NODES
+// ============================================
+
+// Header node with structured contact
+export type HeaderNode = {
   type: "header";
-  children: CustomText[];
+  name: TextNode[];
+  title: TextNode[];
+  location: TextNode[];
+  contact: ContactInfo;
+  children: TextNode[]; // Required for Slate
 };
 
-export type ParagraphElement = {
-  type: "paragraph";
-  children: CustomText[];
+// Summary node
+export type SummaryNode = {
+  type: "summary";
+  children: TextNode[];
 };
 
-export type SectionTitleElement = {
-  type: "section-title";
-  children: CustomText[];
-};
+// ============================================
+// EXPERIENCE
+// ============================================
 
-export type BulletElement = {
+// ATS-safe bullet styles
+export type BulletStyle = "dot" | "arrow" | "check";
+
+export type BulletNode = {
   type: "bullet";
-  bulletStyle: "dot" | "arrow" | "check";
-  children: CustomText[];
+  style: BulletStyle;
+  children: TextNode[];
 };
 
 export type BulletListElement = {
   type: "bullet-list";
-  children: BulletElement[];
+  children: BulletNode[];
 };
 
+export type ExperienceItem = {
+  type: "experience-item";
+  id: string;
+  role: TextNode[];
+  company: TextNode[];
+  location: TextNode[];
+  startDate: string;  // YYYY-MM format
+  endDate: string | "present";
+  logo?: string;      // Optional company logo URL
+  children: BulletNode[];
+};
+
+export type ExperienceSection = {
+  type: "experience";
+  children: ExperienceItem[];
+};
+
+// ============================================
+// SKILLS
+// ============================================
+
+export type SkillGroup = {
+  type: "skill-group";
+  title: TextNode[];
+  skills: TextNode[];
+  children: TextNode[]; // Required for Slate
+};
+
+export type SkillsSection = {
+  type: "skills";
+  children: SkillGroup[];
+};
+
+// ============================================
+// EDUCATION
+// ============================================
+
+export type EducationItem = {
+  type: "education-item";
+  id: string;
+  degree: TextNode[];
+  institution: TextNode[];
+  field: TextNode[];
+  year: string;
+  gpa?: string;
+  children: TextNode[]; // Required for Slate
+};
+
+export type EducationSection = {
+  type: "education";
+  children: EducationItem[];
+};
+
+// ============================================
+// CERTIFICATIONS
+// ============================================
+
+export type CertificationItem = {
+  type: "certification-item";
+  id: string;
+  name: TextNode[];
+  issuer: TextNode[];
+  date: string;
+  children: TextNode[];
+};
+
+export type CertificationSection = {
+  type: "certifications";
+  children: CertificationItem[];
+};
+
+// ============================================
+// LEGACY COMPATIBILITY ELEMENTS
+// These maintain backward compatibility with existing code
+// ============================================
+
+export type ParagraphElement = {
+  type: "paragraph";
+  children: TextNode[];
+};
+
+export type SectionTitleElement = {
+  type: "section-title";
+  children: TextNode[];
+};
+
+// Legacy experience sub-elements for backward compatibility
 export type ExperienceRoleElement = {
   type: "experience-role";
-  children: CustomText[];
+  children: TextNode[];
 };
 
 export type ExperienceCompanyElement = {
   type: "experience-company";
-  children: CustomText[];
+  children: TextNode[];
 };
 
 export type ExperienceDateElement = {
@@ -57,18 +175,24 @@ export type ExperienceDateElement = {
   startDate: string;
   endDate: string;
   isPresent: boolean;
-  children: CustomText[];
+  children: TextNode[];
 };
 
 export type ExperienceLocationElement = {
   type: "experience-location";
-  children: CustomText[];
+  children: TextNode[];
 };
 
 export type ExperienceEntryElement = {
   type: "experience-entry";
   id: string;
+  logo?: string;
   children: (ExperienceRoleElement | ExperienceCompanyElement | ExperienceDateElement | ExperienceLocationElement | BulletListElement)[];
+};
+
+export type SkillItemElement = {
+  type: "skill-item";
+  children: TextNode[];
 };
 
 export type SkillGroupElement = {
@@ -77,15 +201,10 @@ export type SkillGroupElement = {
   children: SkillItemElement[];
 };
 
-export type SkillItemElement = {
-  type: "skill-item";
-  children: CustomText[];
-};
-
 export type EducationEntryElement = {
   type: "education-entry";
   id: string;
-  children: CustomText[];
+  children: TextNode[];
 };
 
 export type SectionElement = {
@@ -94,40 +213,80 @@ export type SectionElement = {
   children: Descendant[];
 };
 
-// Union of all custom elements
+// ============================================
+// UNION TYPES
+// ============================================
+
+// All resume node types
+export type ResumeNode =
+  | HeaderNode
+  | SummaryNode
+  | ExperienceSection
+  | SkillsSection
+  | EducationSection
+  | CertificationSection;
+
+// All custom elements (includes legacy for compatibility)
 export type CustomElement =
-  | HeaderElement
+  | HeaderNode
+  | SummaryNode
+  | ExperienceSection
+  | ExperienceItem
+  | SkillsSection
+  | SkillGroup
+  | EducationSection
+  | EducationItem
+  | CertificationSection
+  | CertificationItem
+  | BulletNode
+  | BulletListElement
   | ParagraphElement
   | SectionTitleElement
-  | BulletElement
-  | BulletListElement
   | ExperienceRoleElement
   | ExperienceCompanyElement
   | ExperienceDateElement
   | ExperienceLocationElement
   | ExperienceEntryElement
-  | SkillGroupElement
   | SkillItemElement
+  | SkillGroupElement
   | EducationEntryElement
   | SectionElement;
 
-// Extend Slate's types
+// ============================================
+// TOP-LEVEL DOCUMENT
+// ============================================
+
+export type ResumeDocument = {
+  id: string;
+  type: "resume" | "cv" | "cover_letter";
+  meta: ResumeMeta;
+  content: ResumeNode[];
+};
+
+// ============================================
+// SLATE TYPE EXTENSIONS
+// ============================================
+
 declare module "slate" {
   interface CustomTypes {
     Editor: BaseEditor & ReactEditor & HistoryEditor;
     Element: CustomElement;
-    Text: CustomText;
+    Text: TextNode;
   }
 }
 
-// ATS-safe bullet styles
-export const BULLET_STYLES = {
+// ============================================
+// CONSTANTS (LOCKED)
+// ============================================
+
+// ATS-safe bullet symbols
+export const BULLET_STYLES: Record<BulletStyle, string> = {
   dot: "•",
   arrow: "▸",
   check: "✓",
 } as const;
 
-// Typography tokens (locked)
+// Typography tokens (locked for consistency)
 export const TYPOGRAPHY = {
   name: { fontWeight: 600, fontSize: "26px", lineHeight: 1.2 },
   role: { fontWeight: 500, fontSize: "14px", lineHeight: 1.3 },
@@ -135,3 +294,17 @@ export const TYPOGRAPHY = {
   body: { fontWeight: 400, fontSize: "11px", lineHeight: 1.6 },
   bullet: { fontWeight: 400, fontSize: "10px", lineHeight: 1.5 },
 } as const;
+
+// ATS formatting whitelist
+export const ATS_ALLOWED_MARKS: (keyof CustomMark)[] = ["bold", "italic", "accent", "muted"];
+
+// Forbidden formatting (silently ignored)
+export const ATS_FORBIDDEN = [
+  "underline",
+  "strikethrough",
+  "subscript",
+  "superscript",
+  "backgroundColor",
+  "fontSize",
+  "fontFamily",
+] as const;
