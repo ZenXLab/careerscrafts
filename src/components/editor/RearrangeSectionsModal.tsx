@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { X, GripVertical, Lock, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,13 @@ const RearrangeSectionsModal = ({
 }: RearrangeSectionsModalProps) => {
   const [localSections, setLocalSections] = useState(sections);
 
+  // Sync with external sections when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setLocalSections(sections);
+    }
+  }, [isOpen, sections]);
+
   const handleReorder = (newOrder: Section[]) => {
     // Keep locked sections in their original positions
     const lockedSections = sections.filter(s => s.locked);
@@ -46,6 +53,8 @@ const RearrangeSectionsModal = ({
     }
     
     setLocalSections(finalOrder);
+    // Update preview in real-time as user drags
+    onReorder(finalOrder);
   };
 
   const handleSave = () => {
@@ -56,16 +65,19 @@ const RearrangeSectionsModal = ({
   return (
     <AnimatePresence>
       {isOpen && (
-        <>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
           <motion.div 
-            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50"
+            className="absolute inset-0 bg-background/80 backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
           />
+          
+          {/* Modal - Centered */}
           <motion.div 
-            className="fixed inset-4 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[500px] md:max-h-[80vh] bg-card border border-border rounded-xl shadow-2xl z-50 overflow-hidden flex flex-col"
+            className="relative w-full max-w-[500px] max-h-[80vh] bg-card border border-border rounded-xl shadow-2xl overflow-hidden flex flex-col"
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -75,7 +87,7 @@ const RearrangeSectionsModal = ({
             <div className="flex items-center justify-between p-4 border-b border-border">
               <div>
                 <h2 className="text-lg font-semibold">Rearrange Sections</h2>
-                <p className="text-sm text-muted-foreground">Drag to reorder your resume sections</p>
+                <p className="text-sm text-muted-foreground">Drag to reorder • Changes apply instantly</p>
               </div>
               <Button variant="ghost" size="icon" onClick={onClose}>
                 <X className="w-4 h-4" />
@@ -109,6 +121,7 @@ const RearrangeSectionsModal = ({
                           : "border-border bg-card hover:border-primary/30"
                       }`}
                       whileHover={!section.locked ? { scale: 1.01 } : {}}
+                      layout
                     >
                       <div className={`p-1 rounded ${section.locked ? "text-muted-foreground/50" : "text-muted-foreground"}`}>
                         {section.locked ? (
@@ -150,11 +163,11 @@ const RearrangeSectionsModal = ({
 
             {/* Footer */}
             <div className="flex items-center justify-end gap-2 p-4 border-t border-border">
-              <Button variant="ghost" onClick={onClose}>Cancel</Button>
-              <Button onClick={handleSave}>Save Order</Button>
+              <Button variant="ghost" onClick={onClose}>Close</Button>
+              <Button onClick={handleSave}>Done</Button>
             </div>
           </motion.div>
-        </>
+        </div>
       )}
     </AnimatePresence>
   );
