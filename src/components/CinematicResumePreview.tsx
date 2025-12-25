@@ -1,89 +1,88 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
+import { heroResumeData } from "@/types/resume";
 
 const CinematicResumePreview = () => {
   const [currentPhase, setCurrentPhase] = useState(0);
   const [isFlipping, setIsFlipping] = useState(false);
+  const data = heroResumeData;
 
   useEffect(() => {
     const phases = [
-      { delay: 1500, phase: 1 },   // Resume appears
-      { delay: 3500, phase: 2 },   // Page flip starts
-      { delay: 6000, phase: 3 },   // Intelligence reveal
-      { delay: 8500, phase: 4 },   // Control & Craft
-      { delay: 11000, phase: 5 },  // Timeline ownership
-      { delay: 13000, phase: 6 },  // CTA ready
+      { delay: 1500, phase: 1 },
+      { delay: 3500, phase: 2 },
+      { delay: 6000, phase: 3 },
+      { delay: 8500, phase: 4 },
+      { delay: 11000, phase: 5 },
+      { delay: 13000, phase: 6 },
     ];
 
     phases.forEach(({ delay, phase }) => {
       setTimeout(() => setCurrentPhase(phase), delay);
     });
 
-    // Trigger page flip
     setTimeout(() => setIsFlipping(true), 3500);
     setTimeout(() => setIsFlipping(false), 5500);
   }, []);
 
   return (
-    <div className="relative w-full max-w-[380px] md:max-w-[420px] mx-auto perspective-1000">
+    <div className="relative w-full max-w-[340px] sm:max-w-[380px] md:max-w-[420px] mx-auto" style={{ perspective: "1200px" }}>
       {/* Ambient Glow */}
       <motion.div
         initial={{ opacity: 0 }}
-        animate={{ opacity: currentPhase >= 1 ? 0.4 : 0 }}
+        animate={{ opacity: currentPhase >= 1 ? 0.5 : 0 }}
         transition={{ duration: 2 }}
-        className="absolute inset-0 bg-primary/10 rounded-full blur-[100px] -z-10"
+        className="absolute inset-0 bg-primary/10 rounded-full blur-[120px] -z-10"
       />
 
-      {/* Main Resume Container with 3D */}
+      {/* Main Resume Container */}
       <motion.div
-        initial={{ opacity: 0, y: 40, rotateX: 15 }}
+        initial={{ opacity: 0, y: 50, rotateX: 20 }}
         animate={{ 
           opacity: currentPhase >= 1 ? 1 : 0, 
-          y: currentPhase >= 1 ? 0 : 40,
-          rotateX: currentPhase >= 1 ? 0 : 15
+          y: currentPhase >= 1 ? 0 : 50,
+          rotateX: currentPhase >= 1 ? 0 : 20
         }}
-        transition={{ duration: 1.5, ease: [0.25, 0.1, 0.25, 1] }}
+        transition={{ duration: 1.8, ease: [0.25, 0.1, 0.25, 1] }}
         className="relative"
         style={{ transformStyle: "preserve-3d" }}
       >
-        {/* Book Spine Effect */}
-        <div className="absolute left-0 top-0 bottom-0 w-2 bg-gradient-to-r from-carbon/50 to-transparent rounded-l-sm z-10" />
-
-        {/* Resume Pages Container */}
+        {/* Resume Pages */}
         <div className="relative" style={{ transformStyle: "preserve-3d" }}>
-          {/* Back Page (Page 2) */}
+          {/* Back Page */}
           <motion.div
             initial={{ opacity: 0 }}
-            animate={{ opacity: isFlipping ? 1 : 0.3 }}
-            className="absolute inset-0 resume-card p-6 md:p-8"
-            style={{ transform: "translateZ(-2px)" }}
+            animate={{ opacity: isFlipping ? 1 : 0.2 }}
+            className="absolute inset-0"
+            style={{ transform: "translateZ(-3px)" }}
           >
-            <ResumePageTwo />
+            <div className="bg-white rounded shadow-2xl p-4 sm:p-6 aspect-[210/297] overflow-hidden">
+              <ResumePageTwo data={data} />
+            </div>
           </motion.div>
 
-          {/* Front Page (Page 1) with Flip Animation */}
+          {/* Front Page with Flip */}
           <motion.div
-            animate={{
-              rotateY: isFlipping ? -180 : 0,
-            }}
-            transition={{ duration: 1.8, ease: [0.4, 0, 0.2, 1] }}
-            className="resume-card p-6 md:p-8 relative"
+            animate={{ rotateY: isFlipping ? -180 : 0 }}
+            transition={{ duration: 2, ease: [0.4, 0, 0.2, 1] }}
+            className="relative"
             style={{ 
               transformStyle: "preserve-3d",
               transformOrigin: "left center",
               backfaceVisibility: "hidden"
             }}
           >
-            <ResumePageOne currentPhase={currentPhase} />
-            
-            {/* Page curl shadow during flip */}
+            <div className="bg-white rounded shadow-2xl p-4 sm:p-6 aspect-[210/297] overflow-hidden">
+              <ResumePageOne data={data} currentPhase={currentPhase} />
+            </div>
+
             <AnimatePresence>
               {isFlipping && (
                 <motion.div
                   initial={{ opacity: 0 }}
-                  animate={{ opacity: 0.3 }}
+                  animate={{ opacity: 0.4 }}
                   exit={{ opacity: 0 }}
-                  className="absolute inset-0 bg-gradient-to-r from-transparent via-carbon/20 to-transparent pointer-events-none"
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-gray-400/30 to-transparent pointer-events-none rounded"
                 />
               )}
             </AnimatePresence>
@@ -93,68 +92,64 @@ const CinematicResumePreview = () => {
         {/* Paper Shadow */}
         <motion.div
           animate={{ opacity: currentPhase >= 1 ? 1 : 0 }}
-          className="absolute -bottom-4 left-4 right-4 h-8 bg-carbon/30 blur-xl rounded-full -z-10"
+          className="absolute -bottom-6 left-6 right-6 h-12 bg-black/20 blur-2xl rounded-full -z-10"
         />
       </motion.div>
 
       {/* ATS Score Panel */}
       <motion.div
-        initial={{ opacity: 0, x: 30, scale: 0.9 }}
+        initial={{ opacity: 0, x: 40, scale: 0.9 }}
         animate={{ 
           opacity: currentPhase >= 3 ? 1 : 0,
-          x: currentPhase >= 3 ? 0 : 30,
+          x: currentPhase >= 3 ? 0 : 40,
           scale: currentPhase >= 3 ? 1 : 0.9
         }}
         transition={{ duration: 0.8, ease: "easeOut" }}
-        className="absolute -right-4 md:-right-12 top-8"
+        className="absolute -right-2 sm:-right-6 md:-right-16 top-6 sm:top-10"
       >
-        <div className="bg-card/95 backdrop-blur-sm border border-border rounded-xl p-4 shadow-elevated">
-          <div className="text-[10px] text-muted-foreground mb-1 font-medium tracking-widest uppercase">ATS Score</div>
+        <div className="bg-card/95 backdrop-blur-md border border-border rounded-xl p-3 sm:p-4 shadow-elevated">
+          <div className="text-[9px] sm:text-[10px] text-muted-foreground mb-1 font-semibold tracking-widest uppercase">ATS Score</div>
           <div className="flex items-baseline gap-1">
             <motion.span
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
-              className="text-3xl font-semibold text-foreground"
+              className="text-2xl sm:text-3xl font-bold text-foreground"
             >
-              92
+              96
             </motion.span>
-            <span className="text-sm text-muted-foreground">/100</span>
+            <span className="text-xs sm:text-sm text-muted-foreground">/100</span>
           </div>
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: "100%" }}
-            transition={{ duration: 1, delay: 0.5 }}
-            className="h-1 bg-emerald rounded-full mt-2"
+            transition={{ duration: 1.2, delay: 0.5 }}
+            className="h-1.5 bg-emerald rounded-full mt-2"
           />
         </div>
       </motion.div>
 
       {/* AI Intelligence Panel */}
       <motion.div
-        initial={{ opacity: 0, x: -30, scale: 0.9 }}
+        initial={{ opacity: 0, x: -40, scale: 0.9 }}
         animate={{ 
           opacity: currentPhase >= 3 ? 1 : 0,
-          x: currentPhase >= 3 ? 0 : -30,
+          x: currentPhase >= 3 ? 0 : -40,
           scale: currentPhase >= 3 ? 1 : 0.9
         }}
-        transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
-        className="absolute -left-4 md:-left-16 top-24"
+        transition={{ duration: 0.8, delay: 0.3 }}
+        className="absolute -left-2 sm:-left-6 md:-left-20 top-20 sm:top-28"
       >
-        <div className="bg-card/95 backdrop-blur-sm border border-primary/30 rounded-xl p-4 shadow-glow max-w-[200px]">
-          <div className="text-[10px] text-primary mb-2 font-medium tracking-widest uppercase">AI Insight</div>
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="text-xs text-muted-foreground leading-relaxed"
-          >
-            <span className="text-foreground">"Led team"</span> → <span className="text-emerald">"Managed 12-person team, delivering 40% faster"</span>
-          </motion.p>
+        <div className="bg-card/95 backdrop-blur-md border border-primary/40 rounded-xl p-3 sm:p-4 shadow-glow max-w-[160px] sm:max-w-[200px]">
+          <div className="text-[9px] sm:text-[10px] text-primary mb-2 font-semibold tracking-widest uppercase">AI Insight</div>
+          <p className="text-[10px] sm:text-xs text-muted-foreground leading-relaxed">
+            <span className="text-foreground font-medium">"Designed architecture"</span> → 
+            <span className="text-emerald"> "Architected microservices for 25M+ users"</span>
+          </p>
         </div>
       </motion.div>
 
-      {/* Control Panel - Blocks */}
+      {/* Section Controls */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ 
@@ -162,20 +157,20 @@ const CinematicResumePreview = () => {
           y: currentPhase >= 4 ? 0 : 20
         }}
         transition={{ duration: 0.6 }}
-        className="absolute -left-4 md:-left-20 bottom-32"
+        className="absolute -left-2 sm:-left-6 md:-left-24 bottom-28 sm:bottom-36"
       >
-        <div className="bg-card/90 backdrop-blur-sm border border-border rounded-lg p-3 shadow-subtle">
-          <div className="text-[9px] text-muted-foreground mb-2 font-medium tracking-widest uppercase">Sections</div>
+        <div className="bg-card/90 backdrop-blur-md border border-border rounded-lg p-3 shadow-subtle">
+          <div className="text-[8px] sm:text-[9px] text-muted-foreground mb-2 font-semibold tracking-widest uppercase">Sections</div>
           <div className="space-y-1.5">
-            {["Experience", "Skills", "Education"].map((section, i) => (
+            {["Experience", "Skills", "Certifications"].map((section, i) => (
               <motion.div
                 key={section}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.1 * i }}
-                className="flex items-center gap-2 text-xs text-foreground/80"
+                transition={{ delay: 0.15 * i }}
+                className="flex items-center gap-2 text-[10px] sm:text-xs text-foreground/80"
               >
-                <div className="w-1.5 h-1.5 rounded-full bg-primary/50" />
+                <div className="w-1.5 h-1.5 rounded-full bg-primary" />
                 {section}
               </motion.div>
             ))}
@@ -183,7 +178,7 @@ const CinematicResumePreview = () => {
         </div>
       </motion.div>
 
-      {/* Timeline Ownership */}
+      {/* Timeline */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ 
@@ -191,57 +186,44 @@ const CinematicResumePreview = () => {
           y: currentPhase >= 5 ? 0 : 20
         }}
         transition={{ duration: 0.6 }}
-        className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-full max-w-[280px]"
+        className="absolute -bottom-12 sm:-bottom-10 left-1/2 -translate-x-1/2 w-full max-w-[260px] sm:max-w-[300px]"
       >
-        <div className="bg-card/90 backdrop-blur-sm border border-border rounded-lg p-3 shadow-subtle">
+        <div className="bg-card/90 backdrop-blur-md border border-border rounded-lg p-3 shadow-subtle">
           <div className="flex items-center justify-between">
-            {["Imported", "Improved", "Finalized"].map((step, i) => (
+            {["Imported", "Enhanced", "Finalized"].map((step, i) => (
               <motion.div
                 key={step}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.2 * i }}
+                transition={{ delay: 0.25 * i }}
                 className="flex flex-col items-center"
               >
-                <div className={`w-2 h-2 rounded-full mb-1 ${
-                  i === 2 ? "bg-emerald shadow-[0_0_8px_hsl(var(--emerald-slate))]" : "bg-muted-foreground/30"
+                <div className={`w-2.5 h-2.5 rounded-full mb-1 ${
+                  i === 2 ? "bg-emerald shadow-[0_0_12px_hsl(var(--emerald-slate))]" : "bg-muted-foreground/30"
                 }`} />
-                <span className="text-[9px] text-muted-foreground">{step}</span>
+                <span className="text-[8px] sm:text-[9px] text-muted-foreground">{step}</span>
               </motion.div>
             ))}
           </div>
-          <div className="flex mt-2">
-            <div className="flex-1 h-0.5 bg-muted-foreground/20" />
-            <div className="flex-1 h-0.5 bg-muted-foreground/20" />
+          <div className="flex mt-2 gap-1">
+            <div className="flex-1 h-0.5 bg-emerald/50 rounded" />
+            <div className="flex-1 h-0.5 bg-emerald/50 rounded" />
           </div>
         </div>
       </motion.div>
 
-      {/* Microcopy Overlays */}
+      {/* Microcopy */}
       <AnimatePresence>
         {currentPhase === 2 && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute -bottom-20 left-1/2 -translate-x-1/2 text-center"
+            className="absolute -bottom-24 sm:-bottom-20 left-1/2 -translate-x-1/2 text-center"
           >
-            <p className="text-sm text-muted-foreground italic">
+            <p className="text-xs sm:text-sm text-muted-foreground italic">
               Designed like a document.<br />
               <span className="text-foreground/70">Not a template.</span>
-            </p>
-          </motion.div>
-        )}
-        {currentPhase === 4 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute -right-4 md:-right-24 bottom-48 max-w-[140px]"
-          >
-            <p className="text-xs text-muted-foreground">
-              You stay creative.<br />
-              <span className="text-foreground/80">We enforce correctness.</span>
             </p>
           </motion.div>
         )}
@@ -250,153 +232,148 @@ const CinematicResumePreview = () => {
   );
 };
 
-const ResumePageOne = ({ currentPhase }: { currentPhase: number }) => (
-  <>
-    {/* Header */}
+const ResumePageOne = ({ data, currentPhase }: { data: typeof heroResumeData; currentPhase: number }) => (
+  <div className="text-gray-900 h-full text-[8px] sm:text-[9px] leading-tight">
+    {/* Header with Photo */}
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: currentPhase >= 1 ? 1 : 0 }}
       transition={{ duration: 0.8, delay: 0.3 }}
-      className="mb-5"
+      className="flex items-start gap-3 mb-3 pb-2 border-b-2 border-indigo-600"
     >
-      <div className="h-4 w-36 bg-carbon/90 rounded-sm mb-2" />
-      <div className="h-2.5 w-28 bg-carbon/40 rounded-sm" />
-    </motion.div>
-
-    {/* Contact Bar */}
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: currentPhase >= 1 ? 1 : 0 }}
-      transition={{ duration: 0.8, delay: 0.5 }}
-      className="flex gap-4 mb-5 pb-4 border-b border-carbon/10"
-    >
-      <div className="h-2 w-20 bg-carbon/25 rounded-sm" />
-      <div className="h-2 w-24 bg-carbon/25 rounded-sm" />
-      <div className="h-2 w-16 bg-carbon/25 rounded-sm" />
+      <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden border-2 border-indigo-600 flex-shrink-0">
+        <img 
+          src={data.personalInfo.photo} 
+          alt={data.personalInfo.name}
+          className="w-full h-full object-cover"
+        />
+      </div>
+      <div className="flex-1 min-w-0">
+        <h1 className="text-sm sm:text-base font-bold text-gray-900 truncate">{data.personalInfo.name}</h1>
+        <p className="text-[9px] sm:text-[10px] font-semibold text-indigo-600 truncate">{data.personalInfo.title}</p>
+        <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-1 text-[7px] sm:text-[8px] text-gray-500">
+          <span>{data.personalInfo.email}</span>
+          <span>•</span>
+          <span>{data.personalInfo.phone}</span>
+          <span>•</span>
+          <span>{data.personalInfo.location}</span>
+        </div>
+      </div>
     </motion.div>
 
     {/* Summary */}
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: currentPhase >= 1 ? 1 : 0 }}
-      transition={{ duration: 0.8, delay: 0.7 }}
-      className="mb-5"
+      transition={{ duration: 0.8, delay: 0.5 }}
+      className="mb-2"
     >
-      <div className="h-2.5 w-24 bg-indigo mb-3 rounded-sm" />
-      <div className="space-y-1.5">
-        <div className="h-2 w-full bg-carbon/15 rounded-sm" />
-        <div className="h-2 w-11/12 bg-carbon/15 rounded-sm" />
-        <div className="h-2 w-4/5 bg-carbon/15 rounded-sm" />
-      </div>
+      <h2 className="text-[8px] sm:text-[9px] font-bold text-indigo-600 uppercase tracking-wider mb-1">Summary</h2>
+      <p className="text-gray-600 leading-relaxed line-clamp-3">{data.summary}</p>
     </motion.div>
 
     {/* Experience */}
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: currentPhase >= 1 ? 1 : 0 }}
-      transition={{ duration: 0.8, delay: 0.9 }}
-      className="mb-5"
+      transition={{ duration: 0.8, delay: 0.7 }}
+      className="mb-2"
     >
-      <div className="h-2.5 w-28 bg-indigo mb-3 rounded-sm" />
-      
-      {/* Job 1 */}
-      <div className="mb-4">
-        <div className="flex justify-between items-center mb-2">
-          <div className="h-2.5 w-32 bg-carbon/60 rounded-sm" />
-          <div className="h-2 w-20 bg-carbon/25 rounded-sm" />
+      <h2 className="text-[8px] sm:text-[9px] font-bold text-indigo-600 uppercase tracking-wider mb-1">Experience</h2>
+      {data.experience.slice(0, 2).map((exp, idx) => (
+        <div key={exp.id} className="mb-2">
+          <div className="flex justify-between items-baseline">
+            <h3 className="font-bold text-gray-900 text-[8px] sm:text-[9px]">{exp.position}</h3>
+            <span className="text-[6px] sm:text-[7px] text-gray-400">{exp.startDate} — {exp.endDate}</span>
+          </div>
+          <p className="text-[7px] sm:text-[8px] text-gray-600 font-medium">{exp.company}</p>
+          <ul className="mt-0.5 space-y-0.5">
+            {exp.bullets.slice(0, 2).map((bullet, i) => (
+              <motion.li
+                key={i}
+                animate={{
+                  backgroundColor: currentPhase >= 3 && idx === 0 && i === 0 ? "rgba(16, 185, 129, 0.1)" : "transparent"
+                }}
+                className="flex text-gray-600 rounded px-0.5"
+              >
+                <span className="mr-1 text-gray-400">▸</span>
+                <span className="line-clamp-1">{bullet}</span>
+              </motion.li>
+            ))}
+          </ul>
         </div>
-        <div className="h-2 w-24 bg-carbon/35 rounded-sm mb-2" />
-        <div className="space-y-1.5 pl-3 border-l-2 border-carbon/10">
-          <motion.div
-            animate={{
-              backgroundColor: currentPhase >= 3 ? "hsl(var(--emerald-slate) / 0.1)" : "transparent"
-            }}
-            className="h-2 w-full bg-carbon/12 rounded-sm transition-colors duration-500"
-          />
-          <div className="h-2 w-10/12 bg-carbon/12 rounded-sm" />
-        </div>
-      </div>
-
-      {/* Job 2 */}
-      <div>
-        <div className="flex justify-between items-center mb-2">
-          <div className="h-2.5 w-28 bg-carbon/60 rounded-sm" />
-          <div className="h-2 w-18 bg-carbon/25 rounded-sm" />
-        </div>
-        <div className="h-2 w-20 bg-carbon/35 rounded-sm mb-2" />
-        <div className="space-y-1.5 pl-3 border-l-2 border-carbon/10">
-          <div className="h-2 w-full bg-carbon/12 rounded-sm" />
-          <div className="h-2 w-9/12 bg-carbon/12 rounded-sm" />
-        </div>
-      </div>
+      ))}
     </motion.div>
 
     {/* Skills */}
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: currentPhase >= 1 ? 1 : 0 }}
-      transition={{ duration: 0.8, delay: 1.1 }}
+      transition={{ duration: 0.8, delay: 0.9 }}
     >
-      <div className="h-2.5 w-16 bg-indigo mb-3 rounded-sm" />
-      <div className="flex flex-wrap gap-2">
-        {[16, 20, 14, 22, 16, 18].map((w, i) => (
-          <div key={i} className="h-5 bg-carbon/8 rounded-sm" style={{ width: `${w * 4}px` }} />
+      <h2 className="text-[8px] sm:text-[9px] font-bold text-indigo-600 uppercase tracking-wider mb-1">Skills</h2>
+      <div className="flex flex-wrap gap-1">
+        {data.skills.flatMap(s => s.items).slice(0, 10).map((skill, i) => (
+          <span key={i} className="px-1.5 py-0.5 bg-indigo-50 text-indigo-700 rounded text-[6px] sm:text-[7px]">
+            {skill}
+          </span>
         ))}
       </div>
     </motion.div>
-  </>
+  </div>
 );
 
-const ResumePageTwo = () => (
-  <>
-    {/* Education Header */}
-    <div className="mb-5">
-      <div className="h-2.5 w-24 bg-indigo mb-3 rounded-sm" />
-      <div className="mb-3">
-        <div className="flex justify-between items-center mb-2">
-          <div className="h-2.5 w-40 bg-carbon/60 rounded-sm" />
-          <div className="h-2 w-16 bg-carbon/25 rounded-sm" />
+const ResumePageTwo = ({ data }: { data: typeof heroResumeData }) => (
+  <div className="text-gray-900 h-full text-[8px] sm:text-[9px] leading-tight">
+    {/* Education */}
+    <div className="mb-3">
+      <h2 className="text-[8px] sm:text-[9px] font-bold text-indigo-600 uppercase tracking-wider mb-2">Education</h2>
+      {data.education.map((edu) => (
+        <div key={edu.id} className="mb-2">
+          <div className="flex justify-between">
+            <h3 className="font-bold text-gray-900">{edu.school}</h3>
+            <span className="text-[6px] sm:text-[7px] text-gray-400">{edu.endDate}</span>
+          </div>
+          <p className="text-gray-600">{edu.degree} in {edu.field}</p>
+          {edu.gpa && <p className="text-[6px] sm:text-[7px] text-gray-500">GPA: {edu.gpa}</p>}
         </div>
-        <div className="h-2 w-32 bg-carbon/35 rounded-sm" />
-      </div>
+      ))}
     </div>
 
     {/* Certifications */}
-    <div className="mb-5">
-      <div className="h-2.5 w-28 bg-indigo mb-3 rounded-sm" />
-      <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          <div className="w-1.5 h-1.5 rounded-full bg-carbon/30" />
-          <div className="h-2 w-40 bg-carbon/20 rounded-sm" />
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-1.5 h-1.5 rounded-full bg-carbon/30" />
-          <div className="h-2 w-36 bg-carbon/20 rounded-sm" />
-        </div>
+    <div className="mb-3">
+      <h2 className="text-[8px] sm:text-[9px] font-bold text-indigo-600 uppercase tracking-wider mb-2">Certifications</h2>
+      <div className="space-y-1.5">
+        {data.certifications?.map((cert) => (
+          <div key={cert.id}>
+            <p className="font-medium text-gray-800">{cert.name}</p>
+            <p className="text-[6px] sm:text-[7px] text-gray-500">{cert.issuer} • {cert.date}</p>
+          </div>
+        ))}
       </div>
     </div>
 
     {/* Projects */}
-    <div className="mb-5">
-      <div className="h-2.5 w-20 bg-indigo mb-3 rounded-sm" />
-      <div className="space-y-3">
-        <div>
-          <div className="h-2.5 w-28 bg-carbon/50 rounded-sm mb-1.5" />
-          <div className="h-2 w-full bg-carbon/12 rounded-sm" />
-          <div className="h-2 w-3/4 bg-carbon/12 rounded-sm mt-1" />
+    <div className="mb-3">
+      <h2 className="text-[8px] sm:text-[9px] font-bold text-indigo-600 uppercase tracking-wider mb-2">Key Projects</h2>
+      {data.projects?.slice(0, 1).map((proj) => (
+        <div key={proj.id}>
+          <h3 className="font-bold text-gray-900">{proj.name}</h3>
+          <p className="text-gray-600 line-clamp-2">{proj.description}</p>
         </div>
-      </div>
+      ))}
     </div>
 
     {/* Languages */}
     <div>
-      <div className="h-2.5 w-24 bg-indigo mb-3 rounded-sm" />
-      <div className="flex gap-4">
-        <div className="h-2 w-20 bg-carbon/20 rounded-sm" />
-        <div className="h-2 w-16 bg-carbon/20 rounded-sm" />
+      <h2 className="text-[8px] sm:text-[9px] font-bold text-indigo-600 uppercase tracking-wider mb-1">Languages</h2>
+      <div className="flex gap-3">
+        {data.languages?.map((lang, i) => (
+          <span key={i} className="text-gray-600">{lang.language} — {lang.proficiency}</span>
+        ))}
       </div>
     </div>
-  </>
+  </div>
 );
 
 export default CinematicResumePreview;
