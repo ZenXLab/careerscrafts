@@ -24,6 +24,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import SectionWrapper from "./SectionWrapper";
 import SlateInlineField from "./slate/SlateInlineField";
+import SkillTokenEditor from "./SkillTokenEditor";
 
 // A4 dimensions at 96 DPI (LOCKED)
 const A4_WIDTH = 794;
@@ -221,6 +222,26 @@ const LiveResumeCanvas = ({
     onDataChange(newData);
   }, [data, onDataChange]);
 
+  // Handle skill category name change
+  const handleSkillCategoryChange = useCallback((categoryIndex: number, newCategory: string) => {
+    if (!onDataChange || !data.skills) return;
+    
+    const newData = { ...data };
+    newData.skills = [...newData.skills];
+    newData.skills[categoryIndex] = { ...newData.skills[categoryIndex], category: newCategory };
+    onDataChange(newData);
+  }, [data, onDataChange]);
+
+  // Handle skill items change (add/remove skills)
+  const handleSkillItemsChange = useCallback((categoryIndex: number, newItems: string[]) => {
+    if (!onDataChange || !data.skills) return;
+    
+    const newData = { ...data };
+    newData.skills = [...newData.skills];
+    newData.skills[categoryIndex] = { ...newData.skills[categoryIndex], items: newItems };
+    onDataChange(newData);
+  }, [data, onDataChange]);
+
   // Handle bullet reordering within an experience entry
   const handleBulletReorder = useCallback((expIdx: number, oldBulletIdx: number, newBulletIdx: number) => {
     if (!onDataChange) return;
@@ -401,6 +422,8 @@ const LiveResumeCanvas = ({
                   sectionOrder={sectionOrder}
                   onFieldChange={handleFieldChange}
                   onBulletReorder={handleBulletReorder}
+                  onSkillCategoryChange={handleSkillCategoryChange}
+                  onSkillItemsChange={handleSkillItemsChange}
                 />
               </DndContext>
             </div>
@@ -429,6 +452,8 @@ interface InlineResumeDocumentProps {
   sectionOrder: string[];
   onFieldChange: (field: string, value: string) => void;
   onBulletReorder: (expIdx: number, oldIdx: number, newIdx: number) => void;
+  onSkillCategoryChange: (categoryIndex: number, newCategory: string) => void;
+  onSkillItemsChange: (categoryIndex: number, newItems: string[]) => void;
 }
 
 // Experience entry with sortable bullets
@@ -521,6 +546,8 @@ const InlineResumeDocument = ({
   sectionOrder,
   onFieldChange,
   onBulletReorder,
+  onSkillCategoryChange,
+  onSkillItemsChange,
 }: InlineResumeDocumentProps) => {
   const accentColor = settings.accentColor || template.accentColor;
   const sectionGap = settings.sectionSpacing;
@@ -559,20 +586,15 @@ const InlineResumeDocument = ({
           >
             <div className="space-y-2">
               {data.skills.map((cat, i) => (
-                <div key={i} className="flex flex-wrap gap-1.5 items-center">
-                  <span className="text-[9pt] font-semibold text-gray-700 min-w-[80px]">{cat.category}:</span>
-                  <div className="flex flex-wrap gap-1">
-                    {cat.items.map((skill, j) => (
-                      <span 
-                        key={j}
-                        className="px-2 py-0.5 text-[8pt] rounded text-gray-700"
-                        style={{ backgroundColor: `${accentColor}15` }}
-                      >
-                        {skill}
-                      </span>
-                    ))}
-                  </div>
-                </div>
+                <SkillTokenEditor
+                  key={i}
+                  category={cat.category}
+                  items={cat.items}
+                  categoryIndex={i}
+                  accentColor={accentColor}
+                  onCategoryChange={onSkillCategoryChange}
+                  onItemsChange={onSkillItemsChange}
+                />
               ))}
             </div>
           </SectionWrapper>
