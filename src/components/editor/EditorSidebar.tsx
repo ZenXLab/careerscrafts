@@ -16,13 +16,15 @@ import {
   Upload,
   LayoutTemplate,
   Menu,
-  X
+  X,
+  Layout
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface EditorSidebarProps {
   onAddSection: () => void;
   onRearrange: () => void;
+  onLayoutStructure: () => void;
   onTemplates: () => void;
   onDesign: () => void;
   onImproveText: () => void;
@@ -55,6 +57,7 @@ const sidebarGroups = [
   {
     label: "Sections",
     items: [
+      { id: "layout-structure", icon: Layout, label: "Layout Structure", action: "layoutStructure" },
       { id: "add-section", icon: Plus, label: "Add Section", action: "addSection" },
       { id: "rearrange", icon: GripVertical, label: "Rearrange", action: "rearrange" },
     ]
@@ -96,6 +99,7 @@ const sidebarGroups = [
 const EditorSidebar = ({
   onAddSection,
   onRearrange,
+  onLayoutStructure,
   onTemplates,
   onDesign,
   onImproveText,
@@ -115,6 +119,7 @@ const EditorSidebar = ({
       case "aiGenerate": onAiGenerate(); break;
       case "pdfUpload": onPdfUpload(); break;
       case "exportPDF": onExportPDF(); break;
+      case "layoutStructure": onLayoutStructure(); break;
       case "addSection": onAddSection(); break;
       case "rearrange": onRearrange(); break;
       case "templates": onTemplates(); break;

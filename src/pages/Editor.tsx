@@ -12,6 +12,7 @@ import LiveResumeCanvas from "@/components/editor/LiveResumeCanvas";
 import ContextualPanel from "@/components/editor/ContextualPanel";
 import AddSectionModal from "@/components/editor/AddSectionModal";
 import RearrangeSectionsModal from "@/components/editor/RearrangeSectionsModal";
+import LayoutStructureModal from "@/components/editor/LayoutStructureModal";
 import AIGenerationModal from "@/components/editor/AIGenerationModal";
 import DesignPanel, { DesignSettings } from "@/components/editor/DesignPanel";
 import PDFUploadModal from "@/components/editor/PDFUploadModal";
@@ -64,6 +65,7 @@ const Editor = () => {
   // Modal states
   const [showAddSection, setShowAddSection] = useState(false);
   const [showRearrange, setShowRearrange] = useState(false);
+  const [showLayoutStructure, setShowLayoutStructure] = useState(false);
   const [showAiGenerate, setShowAiGenerate] = useState(false);
   const [showDesignPanel, setShowDesignPanel] = useState(false);
   const [showPdfUpload, setShowPdfUpload] = useState(false);
@@ -99,6 +101,7 @@ const Editor = () => {
   const closeAllModals = useCallback(() => {
     setShowAddSection(false);
     setShowRearrange(false);
+    setShowLayoutStructure(false);
     setShowAiGenerate(false);
     setShowDesignPanel(false);
     setShowPdfUpload(false);
@@ -223,6 +226,17 @@ const Editor = () => {
     });
   };
 
+  const handleLayoutStructure = (layout: "single-column" | "two-column" | "sidebar") => {
+    setDesignSettings(prev => ({
+      ...prev,
+      layout,
+    }));
+    toast({ 
+      title: "Layout changed", 
+      description: `Switched to ${layout.replace("-", " ")} layout.` 
+    });
+  };
+
   const handleRestoreVersion = (data: ResumeData) => {
     setResumeData(data);
     toast({ title: "Version restored" });
@@ -333,6 +347,7 @@ const Editor = () => {
         <EditorSidebar
           onAddSection={() => setShowAddSection(true)}
           onRearrange={() => setShowRearrange(true)}
+          onLayoutStructure={() => setShowLayoutStructure(true)}
           onTemplates={() => setShowTemplateSwitch(true)}
           onDesign={() => setShowDesignPanel(true)}
           onImproveText={() => setContextualPanelMode("ai-suggestions")}
@@ -389,6 +404,13 @@ const Editor = () => {
         sections={resumeSections}
         onReorder={handleReorderSections}
         onRemove={handleRemoveSection}
+      />
+
+      <LayoutStructureModal
+        isOpen={showLayoutStructure}
+        onClose={() => setShowLayoutStructure(false)}
+        currentLayout={designSettings.layout}
+        onSelectLayout={handleLayoutStructure}
       />
 
       <AIGenerationModal
