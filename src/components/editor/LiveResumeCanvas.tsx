@@ -1,9 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { 
-  ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Maximize2, Eye, Edit3, 
-  Lock, Unlock, GripVertical, Sparkles 
-} from "lucide-react";
+import { motion } from "framer-motion";
+import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ResumeData, TemplateConfig } from "@/types/resume";
 import { DesignSettings } from "./DesignPanel";
@@ -12,30 +9,15 @@ import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-ki
 import SectionWrapper from "./SectionWrapper";
 import InlineEditableField from "./InlineEditableField";
 
-// A4 dimensions at 96 DPI (LOCKED - DO NOT CHANGE)
+// A4 dimensions at 96 DPI (LOCKED)
 const A4_WIDTH = 794;
 const A4_HEIGHT = 1123;
-
-// Section order (ATS guardrails)
-const SECTION_ORDER = ["header", "summary", "skills", "experience", "education", "certifications", "projects"];
-
-interface SectionLockState {
-  header: boolean;
-  summary: boolean;
-  skills: boolean;
-  experience: boolean;
-  education: boolean;
-  certifications: boolean;
-  projects: boolean;
-}
 
 interface LiveResumeCanvasProps {
   template: TemplateConfig;
   data: ResumeData;
   designSettings?: DesignSettings;
   onDataChange?: (data: ResumeData) => void;
-  onAiImprove?: (field: string, content: string) => void;
-  mode?: "edit" | "preview" | "recruiter";
   sectionOrder?: string[];
   onSectionOrderChange?: (order: string[]) => void;
 }
@@ -45,27 +27,13 @@ const LiveResumeCanvas = ({
   data, 
   designSettings,
   onDataChange,
-  onAiImprove,
-  mode = "edit",
   sectionOrder: externalSectionOrder,
   onSectionOrderChange,
 }: LiveResumeCanvasProps) => {
   const [currentPage, setCurrentPage] = useState(1);
-  const [zoom, setZoom] = useState(0.75);
+  const [zoom, setZoom] = useState(0.8);
   const totalPages = template.pages;
   const containerRef = useRef<HTMLDivElement>(null);
-  const [viewMode, setViewMode] = useState<"edit" | "preview">(mode === "recruiter" ? "preview" : "edit");
-  
-  // Section locks - Header locked by default
-  const [sectionLocks, setSectionLocks] = useState<SectionLockState>({
-    header: true,
-    summary: false,
-    skills: false,
-    experience: false,
-    education: false,
-    certifications: false,
-    projects: false,
-  });
 
   // Section order for drag & drop
   const [sectionOrder, setSectionOrder] = useState<string[]>(
@@ -88,17 +56,23 @@ const LiveResumeCanvas = ({
     }
   }, [externalSectionOrder]);
 
-  // Calculate optimal zoom
+  // Calculate optimal zoom based on container
   useEffect(() => {
-    if (containerRef.current) {
-      const container = containerRef.current;
-      const containerWidth = container.clientWidth - 64;
-      const containerHeight = container.clientHeight - 64;
-      const fitWidth = containerWidth / A4_WIDTH;
-      const fitHeight = containerHeight / A4_HEIGHT;
-      const optimalZoom = Math.min(fitWidth, fitHeight, 1);
-      setZoom(Math.max(0.5, Math.min(optimalZoom, 0.95)));
-    }
+    const calculateZoom = () => {
+      if (containerRef.current) {
+        const container = containerRef.current;
+        const containerWidth = container.clientWidth - 80;
+        const containerHeight = container.clientHeight - 80;
+        const fitWidth = containerWidth / A4_WIDTH;
+        const fitHeight = containerHeight / A4_HEIGHT;
+        const optimalZoom = Math.min(fitWidth, fitHeight, 1);
+        setZoom(Math.max(0.5, Math.min(optimalZoom, 0.95)));
+      }
+    };
+    
+    calculateZoom();
+    window.addEventListener('resize', calculateZoom);
+    return () => window.removeEventListener('resize', calculateZoom);
   }, []);
 
   const handleZoomIn = () => setZoom(prev => Math.min(prev + 0.1, 1.5));
@@ -106,33 +80,28 @@ const LiveResumeCanvas = ({
   const handleFitToPage = () => {
     if (containerRef.current) {
       const container = containerRef.current;
-      const containerWidth = container.clientWidth - 64;
-      const containerHeight = container.clientHeight - 64;
+      const containerWidth = container.clientWidth - 80;
+      const containerHeight = container.clientHeight - 80;
       const fitWidth = containerWidth / A4_WIDTH;
       const fitHeight = containerHeight / A4_HEIGHT;
       setZoom(Math.min(fitWidth, fitHeight, 1));
     }
   };
 
-  // Toggle section lock
-  const toggleSectionLock = (section: keyof SectionLockState) => {
-    setSectionLocks(prev => ({ ...prev, [section]: !prev[section] }));
-  };
-
-  // Handle section drag end
+  // Handle section drag end with ATS guardrails
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (over && active.id !== over.id) {
       const oldIndex = sectionOrder.indexOf(active.id as string);
       const newIndex = sectionOrder.indexOf(over.id as string);
       
-      // ATS guardrail: Experience cannot go below Education
       const newOrder = arrayMove(sectionOrder, oldIndex, newIndex);
+      
+      // ATS guardrail: Experience must be before Education
       const expIdx = newOrder.indexOf("experience");
       const eduIdx = newOrder.indexOf("education");
       if (expIdx > eduIdx && newOrder.includes("experience") && newOrder.includes("education")) {
-        // Revert - experience must be before education
-        return;
+        return; // Prevent invalid order
       }
       
       setSectionOrder(newOrder);
@@ -164,15 +133,15 @@ const LiveResumeCanvas = ({
       } else {
         newData.experience[expIdx] = { ...newData.experience[expIdx], [expField]: value };
       }
+    } else if (fields[0] === "education") {
+      const eduIdx = parseInt(fields[1]);
+      const eduField = fields[2];
+      newData.education = [...newData.education];
+      newData.education[eduIdx] = { ...newData.education[eduIdx], [eduField]: value };
     }
     
     onDataChange(newData);
   }, [data, onDataChange]);
-
-  // Handle AI improvement request
-  const handleAiImprove = useCallback((field: string, content: string) => {
-    onAiImprove?.(field, content);
-  }, [onAiImprove]);
 
   // Default design settings
   const settings: DesignSettings = designSettings || {
@@ -225,33 +194,13 @@ const LiveResumeCanvas = ({
           </Button>
         </div>
 
-        {/* View Mode Toggle */}
-        <div className="flex items-center gap-2">
-          <Button
-            variant={viewMode === "edit" ? "secondary" : "ghost"}
-            size="sm"
-            onClick={() => setViewMode("edit")}
-            className="h-8 text-xs"
-          >
-            <Edit3 className="w-3.5 h-3.5 mr-1.5" />
-            Edit
-          </Button>
-          <Button
-            variant={viewMode === "preview" ? "secondary" : "ghost"}
-            size="sm"
-            onClick={() => setViewMode("preview")}
-            className="h-8 text-xs"
-          >
-            <Eye className="w-3.5 h-3.5 mr-1.5" />
-            Preview
-          </Button>
-        </div>
+        <div className="w-24" /> {/* Spacer for balance */}
       </div>
 
       {/* Canvas Area */}
       <div 
         ref={containerRef}
-        className="flex-1 overflow-auto flex justify-center items-start p-8"
+        className="flex-1 overflow-auto flex justify-center items-start p-4 sm:p-6 lg:p-8"
         style={{
           background: `
             radial-gradient(circle at 50% 0%, hsl(var(--primary) / 0.03) 0%, transparent 50%),
@@ -272,12 +221,13 @@ const LiveResumeCanvas = ({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
           >
-            {/* Paper with Shadow */}
+            {/* Paper with proper A4 aspect ratio */}
             <div 
-              className="relative bg-white rounded-sm"
+              className="relative bg-white rounded-sm overflow-hidden"
               style={{
                 width: `${A4_WIDTH}px`,
                 height: `${A4_HEIGHT}px`,
+                aspectRatio: `${A4_WIDTH} / ${A4_HEIGHT}`,
                 boxShadow: `
                   0 25px 50px -12px rgba(0, 0, 0, 0.25),
                   0 12px 25px -8px rgba(0, 0, 0, 0.15),
@@ -294,12 +244,8 @@ const LiveResumeCanvas = ({
                   template={template}
                   data={data}
                   settings={settings}
-                  viewMode={viewMode}
-                  sectionLocks={sectionLocks}
                   sectionOrder={sectionOrder}
-                  onToggleLock={toggleSectionLock}
                   onFieldChange={handleFieldChange}
-                  onAiImprove={handleAiImprove}
                 />
               </DndContext>
             </div>
@@ -308,12 +254,12 @@ const LiveResumeCanvas = ({
       </div>
 
       {/* Status Bar */}
-      <div className="flex items-center justify-between px-4 py-2 border-t border-border/50 bg-card/50 backdrop-blur-sm flex-shrink-0">
+      <div className="hidden sm:flex items-center justify-between px-4 py-2 border-t border-border/50 bg-card/50 backdrop-blur-sm flex-shrink-0">
         <span className="text-xs text-muted-foreground">
-          {template.name} • A4 ({A4_WIDTH}×{A4_HEIGHT}px) • Click anywhere to edit • Drag sections to reorder
+          {template.name} • A4 • Click text to edit • Drag sections to reorder
         </span>
         <span className="text-xs text-muted-foreground">
-          Last saved: Just now
+          Auto-saved
         </span>
       </div>
     </div>
@@ -325,37 +271,20 @@ interface InlineResumeDocumentProps {
   template: TemplateConfig;
   data: ResumeData;
   settings: DesignSettings;
-  viewMode: "edit" | "preview";
-  sectionLocks: SectionLockState;
   sectionOrder: string[];
-  onToggleLock: (section: keyof SectionLockState) => void;
   onFieldChange: (field: string, value: string) => void;
-  onAiImprove: (field: string, content: string) => void;
 }
 
 const InlineResumeDocument = ({ 
   template, 
   data, 
   settings, 
-  viewMode,
-  sectionLocks,
   sectionOrder,
-  onToggleLock,
   onFieldChange,
-  onAiImprove,
 }: InlineResumeDocumentProps) => {
   const accentColor = settings.accentColor || template.accentColor;
   const fontScale = settings.fontSize / 100;
-  const lineHeight = settings.lineSpacing;
   const sectionGap = settings.sectionSpacing;
-  const isEditing = viewMode === "edit";
-
-  const baseStyles = {
-    fontFamily: settings.fontFamily,
-    fontSize: `${11 * fontScale}pt`,
-    lineHeight: lineHeight,
-    color: '#1f2937',
-  };
 
   // Render sections in order
   const renderSection = (sectionId: string) => {
@@ -366,20 +295,15 @@ const InlineResumeDocument = ({
             key="summary"
             id="summary"
             title="Professional Summary"
-            locked={sectionLocks.summary}
-            onToggleLock={() => onToggleLock("summary")}
-            onAiImprove={isEditing ? () => onAiImprove("summary", data.summary) : undefined}
             accentColor={accentColor}
-            isDraggable={isEditing}
           >
             <InlineEditableField
               value={data.summary}
               onChange={(value) => onFieldChange("summary", value)}
               fieldType="textarea"
-              locked={sectionLocks.summary || !isEditing}
               role={data.personalInfo.title}
               multiline
-              className="text-gray-700 leading-relaxed"
+              className="text-gray-700 leading-relaxed text-[10pt]"
               placeholder="Write a compelling professional summary..."
             />
           </SectionWrapper>
@@ -392,10 +316,7 @@ const InlineResumeDocument = ({
             key="skills"
             id="skills"
             title="Core Skills"
-            locked={sectionLocks.skills}
-            onToggleLock={() => onToggleLock("skills")}
             accentColor={accentColor}
-            isDraggable={isEditing}
           >
             <div className="space-y-2">
               {data.skills.map((cat, i) => (
@@ -424,11 +345,7 @@ const InlineResumeDocument = ({
             key="experience"
             id="experience"
             title="Professional Experience"
-            locked={sectionLocks.experience}
-            onToggleLock={() => onToggleLock("experience")}
-            onAiImprove={isEditing ? () => onAiImprove("experience", JSON.stringify(data.experience)) : undefined}
             accentColor={accentColor}
-            isDraggable={isEditing}
           >
             <div className="space-y-4">
               {data.experience.map((exp, expIdx) => (
@@ -438,10 +355,9 @@ const InlineResumeDocument = ({
                       value={exp.position}
                       onChange={(value) => onFieldChange(`experience.${expIdx}.position`, value)}
                       fieldType="text"
-                      locked={sectionLocks.experience || !isEditing}
                       className="font-bold text-gray-900 text-[12pt]"
                     />
-                    <span className="text-[9pt] text-gray-500 font-medium">
+                    <span className="text-[9pt] text-gray-500 font-medium shrink-0 ml-2">
                       {exp.startDate} — {exp.current ? "Present" : exp.endDate}
                     </span>
                   </div>
@@ -450,21 +366,19 @@ const InlineResumeDocument = ({
                       value={exp.company}
                       onChange={(value) => onFieldChange(`experience.${expIdx}.company`, value)}
                       fieldType="text"
-                      locked={sectionLocks.experience || !isEditing}
                       className="font-semibold text-[10pt]"
                       style={{ color: accentColor }}
                     />
-                    <span className="text-[9pt] text-gray-500">{exp.location}</span>
+                    <span className="text-[9pt] text-gray-500 shrink-0 ml-2">{exp.location}</span>
                   </div>
                   <ul className="space-y-1 mt-2">
                     {exp.bullets.map((bullet, bulletIdx) => (
                       <li key={bulletIdx} className="flex text-gray-700 text-[10pt]">
-                        <span className="mr-2 text-gray-400">▸</span>
+                        <span className="mr-2 text-gray-400 shrink-0">▸</span>
                         <InlineEditableField
                           value={bullet}
                           onChange={(value) => onFieldChange(`experience.${expIdx}.bullets.${bulletIdx}`, value)}
                           fieldType="bullet"
-                          locked={sectionLocks.experience || !isEditing}
                           role={exp.position}
                           className="flex-1"
                         />
@@ -483,20 +397,38 @@ const InlineResumeDocument = ({
             key="education"
             id="education"
             title="Education"
-            locked={sectionLocks.education}
-            onToggleLock={() => onToggleLock("education")}
             accentColor={accentColor}
-            isDraggable={isEditing}
           >
-            {data.education.map((edu) => (
-              <div key={edu.id} className="mb-2">
-                <h3 className="font-bold text-gray-900 text-[11pt]">{edu.school}</h3>
-                <p className="text-gray-600 text-[10pt]">{edu.degree} in {edu.field}</p>
-                <p className="text-gray-500 text-[9pt]">
-                  {edu.startDate} — {edu.endDate} {edu.gpa && `| GPA: ${edu.gpa}`}
-                </p>
-              </div>
-            ))}
+            <div className="space-y-3">
+              {data.education.map((edu, eduIdx) => (
+                <div key={edu.id}>
+                  <div className="flex justify-between items-baseline">
+                    <InlineEditableField
+                      value={edu.degree}
+                      onChange={(value) => onFieldChange(`education.${eduIdx}.degree`, value)}
+                      fieldType="text"
+                      className="font-bold text-gray-900 text-[11pt]"
+                    />
+                    <span className="text-[9pt] text-gray-500 shrink-0 ml-2">
+                      {edu.startDate} — {edu.endDate}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-baseline">
+                    <InlineEditableField
+                      value={edu.school}
+                      onChange={(value) => onFieldChange(`education.${eduIdx}.school`, value)}
+                      fieldType="text"
+                      className="text-[10pt]"
+                      style={{ color: accentColor }}
+                    />
+                    <span className="text-[9pt] text-gray-500 shrink-0 ml-2">{edu.location}</span>
+                  </div>
+                  {edu.gpa && (
+                    <p className="text-[9pt] text-gray-600 mt-0.5">GPA: {edu.gpa}</p>
+                  )}
+                </div>
+              ))}
+            </div>
           </SectionWrapper>
         );
 
@@ -506,66 +438,47 @@ const InlineResumeDocument = ({
   };
 
   return (
-    <div className="w-full h-full p-10 overflow-hidden" style={baseStyles}>
-      {/* Header - Always first, not draggable */}
-      <div 
-        className={`text-center pb-5 border-b-2 mb-5 relative group ${sectionLocks.header ? "opacity-90" : ""}`}
-        style={{ borderColor: accentColor }}
-      >
-        {/* Lock indicator */}
-        {isEditing && (
-          <button
-            onClick={() => onToggleLock("header")}
-            className={`absolute top-0 right-0 p-1 rounded transition-opacity ${
-              sectionLocks.header 
-                ? "opacity-100 text-amber-500" 
-                : "opacity-0 group-hover:opacity-100 text-muted-foreground"
-            }`}
-            title={sectionLocks.header ? "Unlock header" : "Lock header"}
-          >
-            {sectionLocks.header ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
-          </button>
-        )}
-
-        {template.hasPhoto && data.personalInfo.photo && (
-          <div 
-            className="w-20 h-20 rounded-full mx-auto mb-4 overflow-hidden border-2 shadow-md" 
-            style={{ borderColor: accentColor }}
-          >
-            <img src={data.personalInfo.photo} alt={data.personalInfo.name} className="w-full h-full object-cover" />
-          </div>
-        )}
-        
+    <div 
+      className="h-full overflow-hidden p-8"
+      style={{ 
+        fontFamily: settings.fontFamily,
+        lineHeight: settings.lineSpacing,
+      }}
+    >
+      {/* Header - Always at top, not draggable */}
+      <header className="text-center mb-6 pb-4 border-b-2" style={{ borderColor: accentColor }}>
         <InlineEditableField
           value={data.personalInfo.name}
           onChange={(value) => onFieldChange("personalInfo.name", value)}
           fieldType="text"
-          locked={sectionLocks.header || !isEditing}
-          className="font-bold text-gray-900 text-[24pt] text-center w-full block"
+          className="text-2xl font-bold text-gray-900 block"
         />
-        
         <InlineEditableField
           value={data.personalInfo.title}
           onChange={(value) => onFieldChange("personalInfo.title", value)}
           fieldType="text"
-          locked={sectionLocks.header || !isEditing}
-          className="font-semibold text-[12pt] text-center w-full block mb-3"
+          className="text-sm font-medium mt-1 block"
           style={{ color: accentColor }}
         />
-        
-        <div className="flex flex-wrap justify-center gap-4 text-gray-600 text-[9pt]">
-          <span>✉ {data.personalInfo.email}</span>
+        <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-3 text-[9pt] text-gray-600">
+          <span>{data.personalInfo.email}</span>
           <span>•</span>
-          <span>☎ {data.personalInfo.phone}</span>
+          <span>{data.personalInfo.phone}</span>
           <span>•</span>
-          <span>📍 {data.personalInfo.location}</span>
+          <span>{data.personalInfo.location}</span>
+          {data.personalInfo.linkedin && (
+            <>
+              <span>•</span>
+              <span>{data.personalInfo.linkedin}</span>
+            </>
+          )}
         </div>
-      </div>
+      </header>
 
-      {/* Sortable Sections */}
+      {/* Draggable Sections */}
       <SortableContext items={sectionOrder} strategy={verticalListSortingStrategy}>
-        <div style={{ display: "flex", flexDirection: "column", gap: `${sectionGap}px` }}>
-          {sectionOrder.map(sectionId => renderSection(sectionId))}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: `${sectionGap}px` }}>
+          {sectionOrder.map(renderSection)}
         </div>
       </SortableContext>
     </div>
