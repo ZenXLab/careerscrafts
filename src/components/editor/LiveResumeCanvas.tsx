@@ -377,7 +377,7 @@ const InlineResumeDocument = ({
               onChange={(value) => onFieldChange("summary", value)}
               fieldType="textarea"
               locked={sectionLocks.summary || !isEditing}
-              onAiImprove={(content) => onAiImprove("summary", content)}
+              role={data.personalInfo.title}
               multiline
               className="text-gray-700 leading-relaxed"
               placeholder="Write a compelling professional summary..."
@@ -465,7 +465,7 @@ const InlineResumeDocument = ({
                           onChange={(value) => onFieldChange(`experience.${expIdx}.bullets.${bulletIdx}`, value)}
                           fieldType="bullet"
                           locked={sectionLocks.experience || !isEditing}
-                          onAiImprove={(content) => onAiImprove(`experience.${expIdx}.bullets.${bulletIdx}`, content)}
+                          role={exp.position}
                           className="flex-1"
                         />
                       </li>
