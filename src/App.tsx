@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import Templates from "./pages/Templates";
 import Editor from "./pages/Editor";
 import Onboarding from "./pages/Onboarding";
+import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
           <Route path="/templates" element={<Templates />} />
           <Route path="/editor" element={<Editor />} />
           <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="/auth" element={<Auth />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

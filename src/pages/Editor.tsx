@@ -45,6 +45,7 @@ const Editor = () => {
   const { 
     score: atsScore, 
     animatedScore, 
+    breakdown: atsBreakdown,
     feedback: atsFeedback, 
     sectionSignals, 
     isHighScore,
@@ -373,6 +374,7 @@ const Editor = () => {
             animatedScore={animatedScore}
             feedback={atsFeedback}
             isHighScore={isHighScore}
+            breakdown={atsBreakdown}
             compact
           />
           
