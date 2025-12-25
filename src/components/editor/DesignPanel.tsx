@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Type, Palette, Layout, Check } from "lucide-react";
+import { X, Type, Palette, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
@@ -41,14 +41,8 @@ const ACCENT_COLORS = [
   { id: "neutral", name: "Minimalist", value: "hsl(0, 0%, 25%)" },
 ];
 
-const LAYOUT_OPTIONS = [
-  { id: "single-column", name: "Single Column", description: "Traditional top-down layout", icon: "║" },
-  { id: "two-column", name: "Two Column", description: "Modern split layout", icon: "║║" },
-  { id: "sidebar", name: "Sidebar", description: "Skills & info sidebar", icon: "▌║" },
-];
-
 const DesignPanel = ({ isOpen, onClose, settings, onSettingsChange }: DesignPanelProps) => {
-  const [activeTab, setActiveTab] = useState<"font" | "color" | "layout">("font");
+  const [activeTab, setActiveTab] = useState<"font" | "color">("font");
 
   const updateSetting = <K extends keyof DesignSettings>(key: K, value: DesignSettings[K]) => {
     onSettingsChange({ ...settings, [key]: value });
@@ -68,19 +62,18 @@ const DesignPanel = ({ isOpen, onClose, settings, onSettingsChange }: DesignPane
           <div className="flex items-center justify-between p-4 border-b border-border/50">
             <div>
               <h3 className="font-semibold text-foreground">Design & Style</h3>
-              <p className="text-xs text-muted-foreground">Customize your resume appearance</p>
+              <p className="text-xs text-muted-foreground">Customize typography and colors</p>
             </div>
             <Button variant="ghost" size="icon" onClick={onClose}>
               <X className="w-4 h-4" />
             </Button>
           </div>
 
-          {/* Tabs */}
+          {/* Tabs - Only Typography and Colors */}
           <div className="flex border-b border-border/50">
             {[
               { id: "font", label: "Typography", icon: Type },
               { id: "color", label: "Colors", icon: Palette },
-              { id: "layout", label: "Layout", icon: Layout },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -246,53 +239,6 @@ const DesignPanel = ({ isOpen, onClose, settings, onSettingsChange }: DesignPane
                       Your resume content will use this accent color for headers and highlights.
                     </p>
                   </div>
-                </div>
-              </div>
-            )}
-
-            {/* Layout Tab */}
-            {activeTab === "layout" && (
-              <div>
-                <Label className="text-xs uppercase tracking-wider text-muted-foreground mb-3 block">
-                  Page Layout
-                </Label>
-                <div className="space-y-2">
-                  {LAYOUT_OPTIONS.map((layout) => (
-                    <motion.button
-                      key={layout.id}
-                      onClick={() => updateSetting("layout", layout.id as DesignSettings["layout"])}
-                      className={`w-full p-4 rounded-lg border text-left transition-all ${
-                        settings.layout === layout.id
-                          ? "border-primary bg-primary/5"
-                          : "border-border hover:border-primary/50"
-                      }`}
-                      whileHover={{ scale: 1.01 }}
-                      whileTap={{ scale: 0.99 }}
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-16 bg-muted rounded border border-border flex items-center justify-center text-xl font-mono text-muted-foreground">
-                          {layout.icon}
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <p className="font-medium text-foreground">{layout.name}</p>
-                            {settings.layout === layout.id && (
-                              <Check className="w-4 h-4 text-primary" />
-                            )}
-                          </div>
-                          <p className="text-xs text-muted-foreground">{layout.description}</p>
-                        </div>
-                      </div>
-                    </motion.button>
-                  ))}
-                </div>
-
-                {/* ATS Note */}
-                <div className="mt-6 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-                  <p className="text-xs text-amber-600 dark:text-amber-400">
-                    <strong>ATS Tip:</strong> Single column layouts have the highest ATS compatibility.
-                    Two-column layouts may parse incorrectly in some systems.
-                  </p>
                 </div>
               </div>
             )}
