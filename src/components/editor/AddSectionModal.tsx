@@ -1,104 +1,135 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { X, FileText, Languages, Award, Heart, Briefcase, GraduationCap, Globe, BookOpen, Trophy, Users, Link2 } from "lucide-react";
+import { X, Lock, Check, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  ALL_SECTIONS,
+  CORE_SECTIONS,
+  STANDARD_SECTIONS,
+  ADVANCED_SECTIONS,
+  PERSONAL_SECTIONS,
+  getSectionStatus,
+  SectionDefinition,
+  SectionStatus,
+  RoleType,
+} from "@/data/sectionSystem";
 
 interface AddSectionModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAddSection: (sectionType: string) => void;
   existingSections: string[];
+  userRole?: RoleType;
 }
 
-const availableSections = [
-  { 
-    id: "custom", 
-    name: "Custom Section", 
-    icon: FileText, 
-    description: "Create your own section with custom content",
-    preview: "Custom content area"
-  },
-  { 
-    id: "languages", 
-    name: "Languages", 
-    icon: Languages, 
-    description: "Languages you speak and proficiency levels",
-    preview: "English (Native) • Spanish (Fluent)"
-  },
-  { 
-    id: "strengths", 
-    name: "Strengths", 
-    icon: Award, 
-    description: "Key professional strengths and qualities",
-    preview: "Leadership • Problem Solving • Communication"
-  },
-  { 
-    id: "volunteering", 
-    name: "Volunteering", 
-    icon: Heart, 
-    description: "Volunteer work and community involvement",
-    preview: "NGO Coordinator • Community Leader"
-  },
-  { 
-    id: "industry-expertise", 
-    name: "Industry Expertise", 
-    icon: Briefcase, 
-    description: "Domain-specific knowledge and experience",
-    preview: "FinTech • Healthcare • E-commerce"
-  },
-  { 
-    id: "certifications", 
-    name: "Certifications", 
-    icon: GraduationCap, 
-    description: "Professional certifications and licenses",
-    preview: "AWS Certified • PMP • Scrum Master"
-  },
-  { 
-    id: "awards", 
-    name: "Awards", 
-    icon: Trophy, 
-    description: "Recognition and achievements",
-    preview: "Employee of the Year • Innovation Award"
-  },
-  { 
-    id: "publications", 
-    name: "Publications", 
-    icon: BookOpen, 
-    description: "Research papers, articles, and publications",
-    preview: "Journal of Tech • IEEE Paper"
-  },
-  { 
-    id: "courses", 
-    name: "Courses", 
-    icon: GraduationCap, 
-    description: "Relevant courses and training programs",
-    preview: "Machine Learning • Data Science"
-  },
-  { 
-    id: "interests", 
-    name: "Interests", 
-    icon: Heart, 
-    description: "Personal interests and hobbies",
-    preview: "Open Source • Tech Blogging"
-  },
-  { 
-    id: "references", 
-    name: "References", 
-    icon: Users, 
-    description: "Professional references",
-    preview: "Available upon request"
-  },
-  { 
-    id: "links", 
-    name: "Find Me Online", 
-    icon: Link2, 
-    description: "Portfolio, GitHub, and social profiles",
-    preview: "GitHub • LinkedIn • Portfolio"
-  },
-];
+interface SectionCardProps {
+  section: SectionDefinition;
+  status: SectionStatus;
+  onAdd: () => void;
+}
 
-const AddSectionModal = ({ isOpen, onClose, onAddSection, existingSections }: AddSectionModalProps) => {
-  // Filter out already added sections
-  const availableToAdd = availableSections.filter(section => !existingSections.includes(section.id));
+const SectionCard = ({ section, status, onAdd }: SectionCardProps) => {
+  const Icon = section.icon;
+  
+  const isClickable = status === "available";
+  const isDisabled = status === "added" || status === "required";
+  const isLocked = status === "locked";
+
+  return (
+    <TooltipProvider delayDuration={300}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <motion.button
+            onClick={isClickable ? onAdd : undefined}
+            disabled={!isClickable}
+            className={`
+              relative p-4 rounded-lg border text-left transition-all w-full
+              ${isClickable 
+                ? "border-border hover:border-primary/50 hover:bg-primary/5 cursor-pointer" 
+                : isLocked
+                  ? "border-border/50 bg-muted/30 cursor-not-allowed opacity-60"
+                  : "border-primary/30 bg-primary/5 cursor-default"
+              }
+            `}
+            whileHover={isClickable ? { scale: 1.01 } : undefined}
+            whileTap={isClickable ? { scale: 0.99 } : undefined}
+          >
+            {/* Status Badge */}
+            <div className="absolute top-2 right-2">
+              {status === "required" && (
+                <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-primary/10 text-primary">
+                  Required
+                </span>
+              )}
+              {status === "added" && (
+                <span className="flex items-center gap-0.5 text-[9px] font-medium px-1.5 py-0.5 rounded bg-green-500/10 text-green-600">
+                  <Check className="w-3 h-3" />
+                  Added
+                </span>
+              )}
+              {status === "locked" && (
+                <Lock className="w-3.5 h-3.5 text-muted-foreground" />
+              )}
+            </div>
+
+            {/* Content */}
+            <div className="flex items-start gap-3 pr-12">
+              <div className={`
+                p-2 rounded-lg shrink-0
+                ${isDisabled ? "bg-muted" : isLocked ? "bg-muted/50" : "bg-primary/10"}
+              `}>
+                <Icon className={`w-4 h-4 ${isDisabled ? "text-muted-foreground" : isLocked ? "text-muted-foreground/50" : "text-primary"}`} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className={`font-medium text-sm truncate ${isLocked ? "text-muted-foreground" : ""}`}>
+                  {section.name}
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                  {section.description}
+                </p>
+              </div>
+            </div>
+
+            {/* Preview */}
+            <div className={`
+              mt-3 p-2 rounded text-[10px] truncate
+              ${isDisabled 
+                ? "bg-primary/5 text-primary/70" 
+                : isLocked 
+                  ? "bg-muted/30 text-muted-foreground/50"
+                  : "bg-muted/50 text-muted-foreground"
+              }
+            `}>
+              {section.preview}
+            </div>
+          </motion.button>
+        </TooltipTrigger>
+        {isLocked && section.lockedTooltip && (
+          <TooltipContent side="top" className="max-w-[200px]">
+            <p className="text-xs">{section.lockedTooltip}</p>
+          </TooltipContent>
+        )}
+      </Tooltip>
+    </TooltipProvider>
+  );
+};
+
+const AddSectionModal = ({ 
+  isOpen, 
+  onClose, 
+  onAddSection, 
+  existingSections,
+  userRole = "software_engineer"
+}: AddSectionModalProps) => {
+  
+  const getStatus = (sectionId: string) => getSectionStatus(sectionId, existingSections, userRole);
+  
+  const availableCount = ALL_SECTIONS.filter(s => getStatus(s.id) === "available").length;
 
   return (
     <AnimatePresence>
@@ -113,9 +144,9 @@ const AddSectionModal = ({ isOpen, onClose, onAddSection, existingSections }: Ad
             onClick={onClose}
           />
           
-          {/* Modal - Centered */}
+          {/* Modal */}
           <motion.div 
-            className="relative w-full max-w-[700px] max-h-[80vh] bg-card border border-border rounded-xl shadow-2xl overflow-hidden flex flex-col"
+            className="relative w-full max-w-[800px] max-h-[85vh] bg-card border border-border rounded-xl shadow-2xl overflow-hidden flex flex-col"
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -126,9 +157,9 @@ const AddSectionModal = ({ isOpen, onClose, onAddSection, existingSections }: Ad
               <div>
                 <h2 className="text-lg font-semibold">Add Section</h2>
                 <p className="text-sm text-muted-foreground">
-                  {availableToAdd.length > 0 
-                    ? `Choose from ${availableToAdd.length} available sections` 
-                    : "All sections have been added"}
+                  {availableCount > 0 
+                    ? `${availableCount} sections available to add` 
+                    : "All available sections have been added"}
                 </p>
               </div>
               <Button variant="ghost" size="icon" onClick={onClose}>
@@ -136,46 +167,106 @@ const AddSectionModal = ({ isOpen, onClose, onAddSection, existingSections }: Ad
               </Button>
             </div>
 
-            {/* Section Grid */}
-            <div className="p-4 overflow-y-auto flex-1">
-              {availableToAdd.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <p>You've added all available sections!</p>
-                  <p className="text-sm mt-1">Remove a section first to add it again.</p>
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-6">
+              {/* Core Sections */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <h3 className="text-sm font-semibold text-foreground">Core Sections</h3>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
+                    Required
+                  </span>
                 </div>
-              ) : (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {availableToAdd.map((section) => (
-                    <motion.button
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                  {CORE_SECTIONS.map((section) => (
+                    <SectionCard
                       key={section.id}
-                      onClick={() => onAddSection(section.id)}
-                      className="p-4 rounded-lg border text-left transition-all border-border hover:border-primary/50 hover:bg-secondary/50"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="p-2 rounded-lg bg-primary/10">
-                          <section.icon className="w-4 h-4 text-primary" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-medium text-sm truncate">{section.name}</h3>
-                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{section.description}</p>
-                        </div>
-                      </div>
-                      {/* Mini Preview */}
-                      <div className="mt-3 p-2 bg-muted/50 rounded text-[10px] text-muted-foreground truncate">
-                        {section.preview}
-                      </div>
-                    </motion.button>
+                      section={section}
+                      status={getStatus(section.id)}
+                      onAdd={() => onAddSection(section.id)}
+                    />
                   ))}
                 </div>
-              )}
+              </div>
+
+              {/* Standard Sections */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <h3 className="text-sm font-semibold text-foreground">Standard Sections</h3>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-medium">
+                    Optional
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                  {STANDARD_SECTIONS.map((section) => (
+                    <SectionCard
+                      key={section.id}
+                      section={section}
+                      status={getStatus(section.id)}
+                      onAdd={() => onAddSection(section.id)}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Advanced Sections */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <h3 className="text-sm font-semibold text-foreground">Advanced Sections</h3>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 font-medium">
+                    Role-Based
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                  {ADVANCED_SECTIONS.map((section) => (
+                    <SectionCard
+                      key={section.id}
+                      section={section}
+                      status={getStatus(section.id)}
+                      onAdd={() => onAddSection(section.id)}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Personal Sections */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <h3 className="text-sm font-semibold text-foreground">Personal Sections</h3>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Info className="w-3.5 h-3.5 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs max-w-[200px]">
+                          Use sparingly. Overusing personal sections may reduce ATS score.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                  {PERSONAL_SECTIONS.map((section) => (
+                    <SectionCard
+                      key={section.id}
+                      section={section}
+                      status={getStatus(section.id)}
+                      onAdd={() => onAddSection(section.id)}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
 
             {/* Footer */}
-            <div className="p-4 border-t border-border bg-muted/30">
-              <p className="text-xs text-muted-foreground text-center">
-                All sections are ATS-safe and professionally structured
+            <div className="p-4 border-t border-border bg-muted/30 flex items-center justify-between">
+              <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                <Lock className="w-3 h-3" />
+                Locked sections unlock based on your career stage
+              </p>
+              <p className="text-xs text-muted-foreground">
+                All sections are ATS-safe
               </p>
             </div>
           </motion.div>

@@ -76,6 +76,7 @@ const Editor = () => {
   const [showTemplateSwitch, setShowTemplateSwitch] = useState(false);
   const [showThemeManager, setShowThemeManager] = useState(false);
   const [contextualPanelMode, setContextualPanelMode] = useState<"ai-suggestions" | "jd-mapping" | "ats-warnings" | null>(null);
+  const [userRole, setUserRole] = useState<"student" | "fresher" | "software_engineer" | "designer" | "data_ai" | "product_manager" | "consultant" | "manager" | "director" | "academic">("software_engineer");
   
   // Design settings
   const [designSettings, setDesignSettings] = useState<DesignSettings>({
@@ -188,15 +189,43 @@ const Editor = () => {
   };
 
   const handleAddSection = (sectionType: string) => {
+    // Don't add if already exists (except for multi-instance sections)
+    const multiInstanceSections = ["additional_experience", "leadership", "consulting", "teaching"];
+    if (existingSections.includes(sectionType) && !multiInstanceSections.includes(sectionType)) {
+      toast({ title: "Section already added", variant: "destructive" });
+      return;
+    }
+
     // Add to existing sections and section order
     const newExistingSections = [...existingSections, sectionType];
     const newSectionOrder = [...sectionOrder, sectionType];
     
+    // Get proper section name
+    const sectionNames: Record<string, string> = {
+      summary: "Professional Summary",
+      experience: "Professional Experience",
+      skills: "Skills",
+      education: "Education",
+      projects: "Projects",
+      certifications: "Certifications",
+      awards: "Awards & Achievements",
+      languages: "Languages",
+      publications: "Publications",
+      volunteering: "Volunteering",
+      additional_experience: "Additional Experience",
+      leadership: "Leadership & Management",
+      consulting: "Consulting & Freelance",
+      teaching: "Teaching & Mentoring",
+      interests: "Interests",
+      training: "Training & Courses",
+      books_talks: "Books & Talks",
+    };
+    
     setExistingSections(newExistingSections);
     setResumeSections([...resumeSections, {
       id: sectionType,
-      name: sectionType.charAt(0).toUpperCase() + sectionType.slice(1).replace(/-/g, " "),
-      removable: true
+      name: sectionNames[sectionType] || sectionType.charAt(0).toUpperCase() + sectionType.slice(1).replace(/_/g, " "),
+      removable: !["header", "summary", "experience", "skills", "education"].includes(sectionType)
     }]);
     setSectionOrder(newSectionOrder);
     
@@ -232,25 +261,14 @@ const Editor = () => {
           ];
         }
         break;
-      case "volunteering":
-      case "awards":
-      case "interests":
-      case "publications":
-      case "courses":
-      case "strengths":
-      case "industry-expertise":
-      case "references":
-      case "links":
-      case "custom":
-        // These sections will show as placeholders in the canvas
-        break;
+      // All other sections show as placeholders initially
     }
     
     setResumeData(newResumeData);
     setShowAddSection(false);
     toast({ 
       title: "Section added", 
-      description: `${sectionType.charAt(0).toUpperCase() + sectionType.slice(1).replace(/-/g, " ")} section has been added to your resume.` 
+      description: `${sectionNames[sectionType] || sectionType} has been added to your resume.` 
     });
   };
 
@@ -496,6 +514,7 @@ const Editor = () => {
         onClose={() => setShowAddSection(false)}
         onAddSection={handleAddSection}
         existingSections={existingSections}
+        userRole={userRole}
       />
 
       <RearrangeSectionsModal
