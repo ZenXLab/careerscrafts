@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -12,13 +12,17 @@ import LiveResumeCanvas from "@/components/editor/LiveResumeCanvas";
 import ContextualPanel from "@/components/editor/ContextualPanel";
 import AddSectionModal from "@/components/editor/AddSectionModal";
 import RearrangeSectionsModal from "@/components/editor/RearrangeSectionsModal";
+import AIGenerationModal from "@/components/editor/AIGenerationModal";
+import { exportToPDF } from "@/utils/pdfExport";
+import TemplatePreview from "@/components/TemplatePreview";
 import { 
   User, 
   FileText, 
   Briefcase, 
   GraduationCap, 
   Zap,
-  Award
+  Award,
+  FileDown
 } from "lucide-react";
 
 const Editor = () => {
@@ -27,6 +31,7 @@ const Editor = () => {
   const templateId = searchParams.get("template") || "modern-minimal";
   const template = getTemplateById(templateId) || templates[0];
   const { toast } = useToast();
+  const previewRef = useRef<HTMLDivElement>(null);
   
   const [resumeData, setResumeData] = useState<ResumeData>(getResumeForTemplate(templateId));
   const [atsScore, setAtsScore] = useState(82);
@@ -35,6 +40,7 @@ const Editor = () => {
   // Modal states
   const [showAddSection, setShowAddSection] = useState(false);
   const [showRearrange, setShowRearrange] = useState(false);
+  const [showAiGenerate, setShowAiGenerate] = useState(false);
   const [contextualPanelMode, setContextualPanelMode] = useState<"ai-suggestions" | "jd-mapping" | "ats-warnings" | null>(null);
 
   // Sections for navigation
@@ -65,11 +71,37 @@ const Editor = () => {
     return () => clearTimeout(timer);
   }, [atsScore]);
 
-  const handleExport = () => {
+  const handleExportPDF = async () => {
     toast({ 
-      title: "Export ready", 
-      description: "Your resume is ready for download." 
+      title: "Preparing PDF", 
+      description: "Opening print dialog..." 
     });
+    
+    // Create a hidden preview element for PDF export
+    const printContainer = document.createElement("div");
+    printContainer.id = "pdf-print-container";
+    printContainer.style.position = "fixed";
+    printContainer.style.left = "-9999px";
+    printContainer.style.top = "0";
+    document.body.appendChild(printContainer);
+    
+    try {
+      // Render the template preview
+      const previewElement = document.createElement("div");
+      previewElement.innerHTML = `
+        <div style="width: 210mm; min-height: 297mm; background: white; font-family: Inter, sans-serif;">
+          ${document.querySelector('[data-resume-preview]')?.innerHTML || ''}
+        </div>
+      `;
+      printContainer.appendChild(previewElement);
+      
+      await exportToPDF(previewElement, template, resumeData, {
+        format: "pdf",
+        filename: `${resumeData.personalInfo.name.replace(/\s+/g, "_")}_Resume`
+      });
+    } finally {
+      document.body.removeChild(printContainer);
+    }
   };
 
   const handleAddSection = (sectionType: string) => {
@@ -103,6 +135,15 @@ const Editor = () => {
     });
   };
 
+  const handleAiGenerate = (generatedData: ResumeData) => {
+    setResumeData(generatedData);
+    setAtsScore(85); // Reset ATS score for new resume
+    toast({ 
+      title: "Resume generated!", 
+      description: "Review and customize your AI-generated resume." 
+    });
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
@@ -126,11 +167,12 @@ const Editor = () => {
           <Link to="/templates">
             <Button variant="ghost" size="sm">Templates</Button>
           </Link>
-          <Button variant="outline" size="sm" onClick={handleExport}>
-            Preview
+          <Button variant="outline" size="sm" onClick={() => setShowAiGenerate(true)}>
+            AI Generate
           </Button>
-          <Button variant="hero" size="sm" onClick={handleExport}>
-            Download PDF
+          <Button variant="hero" size="sm" onClick={handleExportPDF}>
+            <FileDown className="w-4 h-4 mr-1.5" />
+            Export PDF
           </Button>
         </div>
       </header>
@@ -148,9 +190,11 @@ const Editor = () => {
           onImproveText={() => setContextualPanelMode("ai-suggestions")}
           onAtsCheck={() => setContextualPanelMode("ats-warnings")}
           onJdMapping={() => setContextualPanelMode("jd-mapping")}
-          onDownload={handleExport}
+          onDownload={handleExportPDF}
           onShare={() => toast({ title: "Share", description: "Sharing options coming soon..." })}
           onHistory={() => toast({ title: "History", description: "Version history coming soon..." })}
+          onAiGenerate={() => setShowAiGenerate(true)}
+          onExportPDF={handleExportPDF}
           atsScore={atsScore}
         />
 
@@ -183,10 +227,12 @@ const Editor = () => {
         />
 
         {/* Live Preview Canvas */}
-        <LiveResumeCanvas
-          template={template}
-          data={resumeData}
-        />
+        <div ref={previewRef} data-resume-preview>
+          <LiveResumeCanvas
+            template={template}
+            data={resumeData}
+          />
+        </div>
 
         {/* Right Contextual Panel */}
         {contextualPanelMode && (
@@ -212,6 +258,12 @@ const Editor = () => {
         sections={resumeSections}
         onReorder={handleReorderSections}
         onRemove={handleRemoveSection}
+      />
+
+      <AIGenerationModal
+        isOpen={showAiGenerate}
+        onClose={() => setShowAiGenerate(false)}
+        onGenerate={handleAiGenerate}
       />
     </div>
   );

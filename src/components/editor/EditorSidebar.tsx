@@ -12,7 +12,9 @@ import {
   FileText,
   Briefcase,
   Target,
-  ChevronRight
+  ChevronRight,
+  Wand2,
+  FileDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -29,10 +31,13 @@ interface EditorSidebarProps {
   onDownload: () => void;
   onShare: () => void;
   onHistory: () => void;
+  onAiGenerate: () => void;
+  onExportPDF: () => void;
   atsScore: number;
 }
 
 const sidebarItems = [
+  { id: "ai-generate", icon: Wand2, label: "AI Generate Resume", action: "aiGenerate", highlight: true, primary: true },
   { id: "add-section", icon: Plus, label: "Add Section", action: "addSection" },
   { id: "rearrange", icon: GripVertical, label: "Rearrange Sections", action: "rearrange" },
   { id: "templates", icon: FileText, label: "Templates", action: "templates" },
@@ -40,7 +45,7 @@ const sidebarItems = [
   { id: "improve", icon: Sparkles, label: "Improve Text (AI)", action: "improve", highlight: true },
   { id: "ats", icon: Shield, label: "ATS Check", action: "ats" },
   { id: "jd-mapping", icon: Target, label: "JD Mapping", action: "jdMapping", highlight: true },
-  { id: "download", icon: Download, label: "Download", action: "download" },
+  { id: "export-pdf", icon: FileDown, label: "Export PDF", action: "exportPDF" },
   { id: "share", icon: Share2, label: "Share", action: "share" },
   { id: "history", icon: History, label: "History", action: "history" },
 ];
@@ -58,12 +63,16 @@ const EditorSidebar = ({
   onDownload,
   onShare,
   onHistory,
+  onAiGenerate,
+  onExportPDF,
   atsScore
 }: EditorSidebarProps) => {
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
   const handleAction = (action: string) => {
     switch (action) {
+      case "aiGenerate": onAiGenerate(); break;
+      case "exportPDF": onExportPDF(); break;
       case "addSection": onAddSection(); break;
       case "rearrange": onRearrange(); break;
       case "templates": onTemplates(); break;
@@ -92,16 +101,18 @@ const EditorSidebar = ({
               onMouseEnter={() => setHoveredItem(item.id)}
               onMouseLeave={() => setHoveredItem(null)}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all group ${
-                item.highlight 
-                  ? "text-primary hover:bg-primary/10" 
-                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                (item as any).primary
+                  ? "bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20"
+                  : item.highlight 
+                    ? "text-primary hover:bg-primary/10" 
+                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
               }`}
               whileHover={{ x: 2 }}
               whileTap={{ scale: 0.98 }}
             >
               <item.icon className="w-4 h-4 flex-shrink-0" />
               <span className="flex-1 text-left">{item.label}</span>
-              {item.highlight && (
+              {item.highlight && !(item as any).primary && (
                 <span className="text-[9px] px-1.5 py-0.5 bg-primary/20 text-primary rounded-full">
                   AI
                 </span>
