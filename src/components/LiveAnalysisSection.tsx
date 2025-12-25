@@ -44,12 +44,12 @@ const LiveAnalysisSection = () => {
             transition={{ duration: 0.8 }}
           >
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-light tracking-tight mb-6">
-              This is how we{" "}
-              <span className="font-serif italic">analyze</span>
+              See what{" "}
+              <span className="font-serif italic">recruiters</span> see
             </h2>
             <p className="text-muted-foreground text-lg mb-8 max-w-lg">
-              We don't guess. We analyze. Watch as our AI scans your resume in real-time, 
-              highlighting issues and automatically improving your content.
+              Watch your resume get analyzed in real time — from keyword gaps to clarity improvements. 
+              No guessing. No magic. Just evidence.
             </p>
 
             {/* Analysis Steps */}

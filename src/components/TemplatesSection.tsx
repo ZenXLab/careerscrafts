@@ -42,11 +42,11 @@ const TemplatesSection = () => {
           className="text-center mb-12 md:mb-16"
         >
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-light tracking-tight mb-4">
-            Resume examples tailored for{" "}
-            <span className="font-serif italic">your role</span>
+            Templates built for{" "}
+            <span className="font-serif italic">industries</span> — not aesthetics
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Industry-specific templates with real content. Each one tested against 50+ ATS systems. 
+            Every template is ATS-safe, professionally structured, and designed for a specific career stage. 
             Click any template to start editing immediately.
           </p>
         </motion.div>
