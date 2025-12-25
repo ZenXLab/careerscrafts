@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Type, Palette, Check } from "lucide-react";
+import { X, Type, Palette, Check, Image } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
@@ -19,6 +19,7 @@ export interface DesignSettings {
   sectionSpacing: number;
   accentColor: string;
   layout: "single-column" | "two-column" | "sidebar";
+  background?: "none" | "solid-green" | "hexagons" | "waves" | "triangles" | "diagonal" | "grid" | "dots" | "curves-light" | "curves-dark" | "dashed" | "zigzag" | "circles" | "gradient-blue" | "gradient-tech" | "gradient-minimal" | "solid-mint" | "solid-beige" | "gradient-rainbow";
 }
 
 const FONT_OPTIONS = [
@@ -41,8 +42,30 @@ const ACCENT_COLORS = [
   { id: "neutral", name: "Minimalist", value: "hsl(0, 0%, 25%)" },
 ];
 
+const BACKGROUND_OPTIONS = [
+  { id: "none", name: "None", preview: "bg-white" },
+  { id: "solid-green", name: "Solid Green", preview: "bg-emerald-500" },
+  { id: "hexagons", name: "Hexagons", preview: "hexagon-pattern" },
+  { id: "waves", name: "Waves", preview: "wave-pattern" },
+  { id: "triangles", name: "Triangles", preview: "triangle-pattern" },
+  { id: "diagonal", name: "Diagonal Lines", preview: "diagonal-pattern" },
+  { id: "grid", name: "Grid", preview: "grid-pattern" },
+  { id: "dots", name: "Dots Wave", preview: "dots-pattern" },
+  { id: "curves-light", name: "Curves Light", preview: "curves-light-pattern" },
+  { id: "curves-dark", name: "Curves Dark", preview: "curves-dark-pattern" },
+  { id: "dashed", name: "Dashed Lines", preview: "dashed-pattern" },
+  { id: "zigzag", name: "Zigzag", preview: "zigzag-pattern" },
+  { id: "circles", name: "Circles", preview: "circles-pattern" },
+  { id: "gradient-blue", name: "Blue Gradient", preview: "gradient-blue" },
+  { id: "gradient-tech", name: "Tech Gradient", preview: "gradient-tech" },
+  { id: "gradient-minimal", name: "Minimal Dots", preview: "gradient-minimal" },
+  { id: "solid-mint", name: "Solid Mint", preview: "bg-teal-50" },
+  { id: "solid-beige", name: "Solid Beige", preview: "bg-amber-50" },
+  { id: "gradient-rainbow", name: "Rainbow", preview: "gradient-rainbow" },
+];
+
 const DesignPanel = ({ isOpen, onClose, settings, onSettingsChange }: DesignPanelProps) => {
-  const [activeTab, setActiveTab] = useState<"font" | "color">("font");
+  const [activeTab, setActiveTab] = useState<"font" | "color" | "background">("font");
 
   const updateSetting = <K extends keyof DesignSettings>(key: K, value: DesignSettings[K]) => {
     onSettingsChange({ ...settings, [key]: value });
@@ -69,11 +92,12 @@ const DesignPanel = ({ isOpen, onClose, settings, onSettingsChange }: DesignPane
             </Button>
           </div>
 
-          {/* Tabs - Only Typography and Colors */}
+          {/* Tabs - Typography, Colors, and Backgrounds */}
           <div className="flex border-b border-border/50">
             {[
               { id: "font", label: "Typography", icon: Type },
               { id: "color", label: "Colors", icon: Palette },
+              { id: "background", label: "Backgrounds", icon: Image },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -85,7 +109,7 @@ const DesignPanel = ({ isOpen, onClose, settings, onSettingsChange }: DesignPane
                 }`}
               >
                 <tab.icon className="w-4 h-4" />
-                {tab.label}
+                <span className="hidden sm:inline">{tab.label}</span>
               </button>
             ))}
           </div>
@@ -239,6 +263,43 @@ const DesignPanel = ({ isOpen, onClose, settings, onSettingsChange }: DesignPane
                       Your resume content will use this accent color for headers and highlights.
                     </p>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* Backgrounds Tab */}
+            {activeTab === "background" && (
+              <div>
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground mb-3 block">
+                  Background Design
+                </Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {BACKGROUND_OPTIONS.map((bg) => (
+                    <motion.button
+                      key={bg.id}
+                      onClick={() => updateSetting("background", bg.id as any)}
+                      className={`relative p-3 rounded-lg border-2 transition-all overflow-hidden ${
+                        settings.background === bg.id || (!settings.background && bg.id === "none")
+                          ? "border-primary ring-2 ring-primary/20"
+                          : "border-border hover:border-primary/50"
+                      }`}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      {/* Preview */}
+                      <div className={`w-full h-12 rounded mb-2 ${bg.preview}`} />
+                      {/* Label */}
+                      <span className="text-xs font-medium text-foreground block text-center">
+                        {bg.name}
+                      </span>
+                      {/* Check mark */}
+                      {(settings.background === bg.id || (!settings.background && bg.id === "none")) && (
+                        <div className="absolute top-2 right-2 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                          <Check className="w-3 h-3 text-white" />
+                        </div>
+                      )}
+                    </motion.button>
+                  ))}
                 </div>
               </div>
             )}
