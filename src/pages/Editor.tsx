@@ -99,7 +99,10 @@ const Editor = () => {
     { id: "skills", name: "Skills", removable: true },
   ]);
 
-  const [existingSections, setExistingSections] = useState<string[]>([]);
+  // Track existing sections based on sectionOrder
+  const [existingSections, setExistingSections] = useState<string[]>(() => 
+    ["summary", "skills", "experience", "education"]
+  );
 
   // Close all modals helper
   const closeAllModals = useCallback(() => {
@@ -185,50 +188,70 @@ const Editor = () => {
   };
 
   const handleAddSection = (sectionType: string) => {
-    setExistingSections([...existingSections, sectionType]);
+    // Add to existing sections and section order
+    const newExistingSections = [...existingSections, sectionType];
+    const newSectionOrder = [...sectionOrder, sectionType];
+    
+    setExistingSections(newExistingSections);
     setResumeSections([...resumeSections, {
       id: sectionType,
-      name: sectionType.charAt(0).toUpperCase() + sectionType.slice(1).replace("-", " "),
+      name: sectionType.charAt(0).toUpperCase() + sectionType.slice(1).replace(/-/g, " "),
       removable: true
     }]);
-    setSectionOrder([...sectionOrder, sectionType]);
+    setSectionOrder(newSectionOrder);
     
     // Initialize default data for the new section
     const newResumeData = { ...resumeData };
     
     switch(sectionType) {
       case "languages":
-        if (!newResumeData.languages) {
+        if (!newResumeData.languages || newResumeData.languages.length === 0) {
           newResumeData.languages = [
-            { language: "English", proficiency: "Professional" }
+            { language: "English", proficiency: "Native" },
+            { language: "Spanish", proficiency: "Fluent" }
           ];
         }
         break;
       case "certifications":
-        if (!newResumeData.certifications) {
+        if (!newResumeData.certifications || newResumeData.certifications.length === 0) {
           newResumeData.certifications = [
-            { id: "cert1", name: "Certification Name", issuer: "Issuing Organization", date: "2024" }
+            { id: "cert1", name: "AWS Solutions Architect", issuer: "Amazon Web Services", date: "2024" }
           ];
         }
         break;
       case "projects":
-        if (!newResumeData.projects) {
+        if (!newResumeData.projects || newResumeData.projects.length === 0) {
           newResumeData.projects = [
             { 
               id: "proj1", 
-              name: "Project Name", 
-              description: "Project description here", 
-              technologies: ["Technology 1", "Technology 2"],
-              link: ""
+              name: "Sample Project", 
+              description: "A brief description of your project and its impact", 
+              technologies: ["React", "TypeScript", "Node.js"],
+              link: "https://github.com/example"
             }
           ];
         }
+        break;
+      case "volunteering":
+      case "awards":
+      case "interests":
+      case "publications":
+      case "courses":
+      case "strengths":
+      case "industry-expertise":
+      case "references":
+      case "links":
+      case "custom":
+        // These sections will show as placeholders in the canvas
         break;
     }
     
     setResumeData(newResumeData);
     setShowAddSection(false);
-    toast({ title: "Section added", description: `${sectionType} section has been added.` });
+    toast({ 
+      title: "Section added", 
+      description: `${sectionType.charAt(0).toUpperCase() + sectionType.slice(1).replace(/-/g, " ")} section has been added to your resume.` 
+    });
   };
 
   const handleRemoveSection = (sectionId: string) => {
@@ -448,6 +471,7 @@ const Editor = () => {
             onDataChange={handleResumeDataChange}
             sectionOrder={sectionOrder}
             onSectionOrderChange={setSectionOrder}
+            onExportPDF={handleExportPDF}
           />
         </div>
 
