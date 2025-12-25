@@ -277,7 +277,33 @@ Return improved content in the same format. Focus on:
         prompt = PDF_PARSING_PROMPT.replace("{{pdf_text}}", pdfText);
         systemPrompt = "You are a resume parser AI. Extract structured data from resume text. Output ONLY valid JSON.";
         break;
-        systemPrompt = "You are a resume parser AI. Extract structured data from resume text. Output ONLY valid JSON.";
+        
+      case "parse-jd":
+        // Job description parsing with resume alignment
+        const jdText = data.jobDescription || "";
+        const resumeText = data.resumeContent || "";
+        prompt = `Analyze this job description and compare with the resume content.
+
+JOB DESCRIPTION:
+${jdText}
+
+RESUME CONTENT:
+${resumeText}
+
+Extract keywords from the job description and check if they exist in the resume.
+Output ONLY valid JSON in this exact format:
+{
+  "keywords": [
+    {"keyword": "skill name", "category": "skill|experience|qualification|soft-skill", "importance": "high|medium|low", "found": true|false}
+  ],
+  "matchScore": 75,
+  "suggestions": [
+    {"section": "Skills|Experience|Summary", "suggestion": "Add X to improve alignment", "keyword": "missing keyword"}
+  ],
+  "missingKeywords": ["keyword1", "keyword2"],
+  "matchedKeywords": ["keyword1", "keyword2"]
+}`;
+        systemPrompt = "You are an ATS keyword analyzer. Extract and compare keywords between job descriptions and resumes. Output ONLY valid JSON.";
         break;
         
       default:
@@ -411,7 +437,7 @@ Return improved content in the same format. Focus on:
     
     // Try to parse JSON responses
     let result: unknown = content;
-    if (action === "generate" || action === "jd_mapping") {
+    if (action === "generate" || action === "jd_mapping" || action === "parse-jd" || action === "parse-pdf") {
       try {
         // Extract JSON from markdown code blocks if present
         const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
