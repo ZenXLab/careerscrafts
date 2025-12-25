@@ -242,10 +242,11 @@ const Editor = () => {
         />
 
         {/* Live Preview Canvas */}
-        <div ref={previewRef} data-resume-preview>
+        <div ref={previewRef} data-resume-preview className="flex-1">
           <LiveResumeCanvas
             template={template}
             data={resumeData}
+            designSettings={designSettings}
           />
         </div>
 
