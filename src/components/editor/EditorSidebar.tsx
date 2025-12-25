@@ -33,11 +33,13 @@ interface EditorSidebarProps {
   onHistory: () => void;
   onAiGenerate: () => void;
   onExportPDF: () => void;
+  onPdfUpload: () => void;
   atsScore: number;
 }
 
 const sidebarItems = [
   { id: "ai-generate", icon: Wand2, label: "AI Generate Resume", action: "aiGenerate", highlight: true, primary: true },
+  { id: "pdf-upload", icon: FileText, label: "Import PDF", action: "pdfUpload" },
   { id: "add-section", icon: Plus, label: "Add Section", action: "addSection" },
   { id: "rearrange", icon: GripVertical, label: "Rearrange Sections", action: "rearrange" },
   { id: "templates", icon: FileText, label: "Templates", action: "templates" },
@@ -65,6 +67,7 @@ const EditorSidebar = ({
   onHistory,
   onAiGenerate,
   onExportPDF,
+  onPdfUpload,
   atsScore
 }: EditorSidebarProps) => {
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
@@ -72,6 +75,7 @@ const EditorSidebar = ({
   const handleAction = (action: string) => {
     switch (action) {
       case "aiGenerate": onAiGenerate(); break;
+      case "pdfUpload": onPdfUpload(); break;
       case "exportPDF": onExportPDF(); break;
       case "addSection": onAddSection(); break;
       case "rearrange": onRearrange(); break;
