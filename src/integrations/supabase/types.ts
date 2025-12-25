@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      color_themes: {
+        Row: {
+          accent_color: string
+          background_color: string | null
+          created_at: string | null
+          id: string
+          is_default: boolean | null
+          name: string
+          primary_text_color: string | null
+          secondary_text_color: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          accent_color: string
+          background_color?: string | null
+          created_at?: string | null
+          id?: string
+          is_default?: boolean | null
+          name: string
+          primary_text_color?: string | null
+          secondary_text_color?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          accent_color?: string
+          background_color?: string | null
+          created_at?: string | null
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          primary_text_color?: string | null
+          secondary_text_color?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
