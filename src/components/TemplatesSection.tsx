@@ -33,7 +33,6 @@ const badgeStyles: Record<string, string> = {
 const autoBalanceResume = (data: ResumeData): ResumeData => {
   const balanced = { ...data };
   
-  // Experience Enrichment: Add bullet points if under-filled
   if (balanced.experience && balanced.experience.length > 0) {
     balanced.experience = balanced.experience.map((exp, idx) => {
       if (idx === 0 && exp.bullets.length < 5) {
@@ -71,17 +70,16 @@ const TemplatesSection = () => {
           className="text-center mb-10 md:mb-16"
         >
           <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-light tracking-tight mb-4">
-            Templates built for{" "}
-            <span className="font-serif italic">industries</span> — not aesthetics
+            Industry-Specific{" "}
+            <span className="font-serif italic">Templates</span>
           </h2>
           <p className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-2xl mx-auto px-4">
-            Every template is ATS-safe, professionally structured, and designed for a specific career stage. 
-            Click any template to start editing immediately.
+            Professionally crafted, recruiter-ready resumes. Full pages, real content, auto-balanced density.
           </p>
         </motion.div>
 
-        {/* Category Tabs - Horizontally scrollable on mobile */}
-        <motion.div
+        {/* Category Navigation */}
+        <motion.nav
           initial={{ opacity: 0, y: 10 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -104,9 +102,9 @@ const TemplatesSection = () => {
               </button>
             ))}
           </div>
-        </motion.div>
+        </motion.nav>
 
-        {/* Template Grid - Responsive with full-page previews */}
+        {/* Template Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
           {filteredTemplates.map((template, index) => (
             <FullPageTemplateCard
@@ -139,7 +137,7 @@ const TemplatesSection = () => {
   );
 };
 
-// Full-page A4 template card with auto-balanced content
+// Full-page A4 template card
 const FullPageTemplateCard = ({ 
   template, 
   index, 
@@ -153,7 +151,7 @@ const FullPageTemplateCard = ({
 }) => {
   const data = autoBalanceResume(template.data);
   const accentColor = template.accentColor;
-  const scale = 0.28; // Scale factor for preview
+  const scale = 0.28;
 
   return (
     <motion.div
@@ -165,7 +163,7 @@ const FullPageTemplateCard = ({
       onMouseLeave={() => onHover(null)}
       className="group cursor-pointer"
     >
-      {/* Template Card - Full A4 Preview */}
+      {/* Template Card */}
       <div className="relative mb-3">
         {/* Flagship Badge */}
         {template.isFlagship && (
@@ -202,7 +200,6 @@ const FullPageTemplateCard = ({
               : "0 8px 30px -10px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.03)",
           }}
         >
-          {/* Scaled A4 Content */}
           <div 
             className="origin-top-left"
             style={{
@@ -216,7 +213,7 @@ const FullPageTemplateCard = ({
           </div>
         </motion.div>
 
-        {/* Hover Overlay with Actions */}
+        {/* Hover Overlay */}
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: isHovered ? 1 : 0 }}
