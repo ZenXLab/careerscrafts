@@ -306,6 +306,38 @@ Output ONLY valid JSON in this exact format:
         systemPrompt = "You are an ATS keyword analyzer. Extract and compare keywords between job descriptions and resumes. Output ONLY valid JSON.";
         break;
         
+      case "grammar-check":
+        const textToCheck = data.text || "";
+        prompt = `Check this resume text for grammar, spelling, and style issues.
+
+TEXT TO CHECK:
+${textToCheck}
+
+Analyze the text and return ONLY valid JSON in this exact format:
+{
+  "issues": [
+    {
+      "type": "spelling|grammar|style|punctuation",
+      "original": "the problematic text",
+      "suggestion": "the corrected text",
+      "position": 0,
+      "message": "brief explanation of the issue"
+    }
+  ],
+  "improvedText": "the full text with all corrections applied",
+  "score": 85
+}
+
+Focus on:
+- Spelling mistakes
+- Grammar errors
+- Punctuation issues
+- Resume-specific style (action verbs, professional tone)
+- Capitalize proper nouns
+- Remove redundant words`;
+        systemPrompt = "You are a professional resume proofreader. Check for grammar, spelling, and style issues. Output ONLY valid JSON.";
+        break;
+        
       default:
         throw new Error(`Unknown action: ${action}`);
     }

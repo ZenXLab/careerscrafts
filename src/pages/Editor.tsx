@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { templates, getTemplateById } from "@/data/templates";
-import { ResumeData } from "@/types/resume";
+import { ResumeData, TemplateConfig } from "@/types/resume";
 import { getResumeForTemplate } from "@/data/resumeProfiles";
 import { useToast } from "@/hooks/use-toast";
 import EditorSidebar from "@/components/editor/EditorSidebar";
@@ -14,21 +14,47 @@ import RearrangeSectionsModal from "@/components/editor/RearrangeSectionsModal";
 import AIGenerationModal from "@/components/editor/AIGenerationModal";
 import DesignPanel, { DesignSettings } from "@/components/editor/DesignPanel";
 import PDFUploadModal from "@/components/editor/PDFUploadModal";
+import VersionCompareModal from "@/components/editor/VersionCompareModal";
+import TemplateSwitchModal from "@/components/editor/TemplateSwitchModal";
+import ATSScoreWidget from "@/components/editor/ATSScoreWidget";
+import { useATSScore } from "@/hooks/useATSScore";
+import { useResumeVersions } from "@/hooks/useResumeVersions";
 import { exportToPDF } from "@/utils/pdfExport";
 import { FileDown, Menu } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const Editor = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const templateId = searchParams.get("template") || "modern-minimal";
-  const template = getTemplateById(templateId) || templates[0];
+  const [currentTemplate, setCurrentTemplate] = useState<TemplateConfig>(
+    getTemplateById(templateId) || templates[0]
+  );
   const { toast } = useToast();
   const previewRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   
   const [resumeData, setResumeData] = useState<ResumeData>(getResumeForTemplate(templateId));
-  const [atsScore, setAtsScore] = useState(82);
+  
+  // ATS Score Hook
+  const { 
+    score: atsScore, 
+    animatedScore, 
+    feedback: atsFeedback, 
+    sectionSignals, 
+    isHighScore,
+    recalculate: recalculateATS 
+  } = useATSScore(resumeData);
+  
+  // Resume Versions Hook
+  const {
+    versions,
+    currentVersion,
+    saveVersion,
+    loadVersion,
+    compareVersions,
+    deleteVersion,
+  } = useResumeVersions();
   
   // Sidebar state
   const [sidebarCollapsed, setSidebarCollapsed] = useState(isMobile);
@@ -39,6 +65,8 @@ const Editor = () => {
   const [showAiGenerate, setShowAiGenerate] = useState(false);
   const [showDesignPanel, setShowDesignPanel] = useState(false);
   const [showPdfUpload, setShowPdfUpload] = useState(false);
+  const [showVersionCompare, setShowVersionCompare] = useState(false);
+  const [showTemplateSwitch, setShowTemplateSwitch] = useState(false);
   const [contextualPanelMode, setContextualPanelMode] = useState<"ai-suggestions" | "jd-mapping" | "ats-warnings" | null>(null);
   
   // Design settings
@@ -47,7 +75,7 @@ const Editor = () => {
     fontSize: 100,
     lineSpacing: 1.4,
     sectionSpacing: 20,
-    accentColor: "hsl(221, 83%, 53%)",
+    accentColor: currentTemplate.accentColor || "hsl(221, 83%, 53%)",
     layout: "single-column",
   });
 
@@ -70,13 +98,15 @@ const Editor = () => {
     setSidebarCollapsed(isMobile);
   }, [isMobile]);
 
-  // ATS score animation
+  // Recalculate ATS score when resume data changes
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (atsScore < 94) setAtsScore(prev => Math.min(prev + 1, 94));
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, [atsScore]);
+    recalculateATS(resumeData);
+  }, [resumeData, recalculateATS]);
+
+  // Handle resume data changes with debounce
+  const handleResumeDataChange = useCallback((newData: ResumeData) => {
+    setResumeData(newData);
+  }, []);
 
   const handleExportPDF = async () => {
     toast({ 
@@ -100,7 +130,7 @@ const Editor = () => {
       `;
       printContainer.appendChild(previewElement);
       
-      await exportToPDF(previewElement, template, resumeData, {
+      await exportToPDF(previewElement, currentTemplate, resumeData, {
         format: "pdf",
         filename: `${resumeData.personalInfo.name.replace(/\s+/g, "_")}_Resume`
       });
@@ -136,11 +166,29 @@ const Editor = () => {
 
   const handleAiGenerate = (generatedData: ResumeData) => {
     setResumeData(generatedData);
-    setAtsScore(85);
     toast({ 
       title: "Resume generated!", 
       description: "Review and customize your AI-generated resume." 
     });
+  };
+
+  const handleTemplateSwitch = (template: TemplateConfig) => {
+    setCurrentTemplate(template);
+    setSearchParams({ template: template.id });
+    setDesignSettings(prev => ({
+      ...prev,
+      accentColor: template.accentColor,
+      layout: template.layout,
+    }));
+    toast({ 
+      title: "Template switched", 
+      description: `Now using ${template.name} template.` 
+    });
+  };
+
+  const handleRestoreVersion = (data: ResumeData) => {
+    setResumeData(data);
+    toast({ title: "Version restored" });
   };
 
   // Mobile read-only view
@@ -175,7 +223,7 @@ const Editor = () => {
           </div>
           <div ref={previewRef} data-resume-preview className="pointer-events-none">
             <LiveResumeCanvas
-              template={template}
+              template={currentTemplate}
               data={resumeData}
               designSettings={designSettings}
               sectionOrder={sectionOrder}
@@ -201,14 +249,34 @@ const Editor = () => {
         
         <div className="h-6 w-px bg-border mx-2 hidden sm:block" />
         
-        <span className="text-sm text-muted-foreground hidden md:block">
-          Editing: <span className="text-foreground">{template.name}</span>
-        </span>
+        <button 
+          onClick={() => setShowTemplateSwitch(true)}
+          className="text-sm text-muted-foreground hover:text-foreground transition-colors hidden md:block"
+        >
+          Template: <span className="text-foreground">{currentTemplate.name}</span>
+        </button>
         
-        <div className="ml-auto flex items-center gap-2">
-          <Link to="/templates" className="hidden sm:block">
-            <Button variant="ghost" size="sm">Templates</Button>
-          </Link>
+        {/* ATS Score Widget in Header */}
+        <div className="ml-auto flex items-center gap-3">
+          <ATSScoreWidget
+            score={atsScore}
+            animatedScore={animatedScore}
+            feedback={atsFeedback}
+            isHighScore={isHighScore}
+            compact
+          />
+          
+          <div className="h-6 w-px bg-border hidden sm:block" />
+          
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => setShowVersionCompare(true)}
+            className="hidden sm:flex"
+          >
+            v{currentVersion || 1}
+          </Button>
+          
           <Button variant="outline" size="sm" onClick={() => setShowAiGenerate(true)} className="hidden sm:flex">
             AI Generate
           </Button>
@@ -228,17 +296,17 @@ const Editor = () => {
         <EditorSidebar
           onAddSection={() => setShowAddSection(true)}
           onRearrange={() => setShowRearrange(true)}
-          onTemplates={() => navigate("/templates")}
+          onTemplates={() => setShowTemplateSwitch(true)}
           onDesign={() => setShowDesignPanel(true)}
           onImproveText={() => setContextualPanelMode("ai-suggestions")}
           onAtsCheck={() => setContextualPanelMode("ats-warnings")}
           onJdMapping={() => setContextualPanelMode("jd-mapping")}
           onShare={() => toast({ title: "Share", description: "Sharing options coming soon..." })}
-          onHistory={() => toast({ title: "History", description: "Version history coming soon..." })}
+          onHistory={() => setShowVersionCompare(true)}
           onAiGenerate={() => setShowAiGenerate(true)}
           onExportPDF={handleExportPDF}
           onPdfUpload={() => setShowPdfUpload(true)}
-          atsScore={atsScore}
+          atsScore={animatedScore}
           collapsed={sidebarCollapsed}
           onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
         />
@@ -246,10 +314,10 @@ const Editor = () => {
         {/* Live Preview Canvas with Inline Editing */}
         <div ref={previewRef} data-resume-preview className="flex-1">
           <LiveResumeCanvas
-            template={template}
+            template={currentTemplate}
             data={resumeData}
             designSettings={designSettings}
-            onDataChange={setResumeData}
+            onDataChange={handleResumeDataChange}
             sectionOrder={sectionOrder}
             onSectionOrderChange={setSectionOrder}
           />
@@ -306,6 +374,27 @@ const Editor = () => {
           setResumeData(data);
           toast({ title: "Resume imported!", description: "Edit your imported resume." });
         }}
+      />
+
+      <VersionCompareModal
+        isOpen={showVersionCompare}
+        onClose={() => setShowVersionCompare(false)}
+        versions={versions}
+        currentData={resumeData}
+        onSaveVersion={saveVersion}
+        onLoadVersion={loadVersion}
+        onRestoreVersion={handleRestoreVersion}
+        onDeleteVersion={deleteVersion}
+        compareVersions={compareVersions}
+        atsScore={atsScore}
+      />
+
+      <TemplateSwitchModal
+        isOpen={showTemplateSwitch}
+        onClose={() => setShowTemplateSwitch(false)}
+        currentTemplate={currentTemplate}
+        onSelectTemplate={handleTemplateSwitch}
+        currentATSScore={atsScore}
       />
     </div>
   );
