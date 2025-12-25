@@ -77,7 +77,8 @@ const SlateElement = ({ attributes, children, element, accentColor = "#2563eb" }
       );
 
     case "bullet":
-      const bulletChar = BULLET_STYLES[element.bulletStyle] || BULLET_STYLES.dot;
+      const bulletStyle = (element as any).style || (element as any).bulletStyle || "dot";
+      const bulletChar = BULLET_STYLES[bulletStyle as keyof typeof BULLET_STYLES] || BULLET_STYLES.dot;
       return (
         <li
           {...attributes}
@@ -196,7 +197,11 @@ const SlateElement = ({ attributes, children, element, accentColor = "#2563eb" }
               display: "inline-block",
             }}
           >
-            {element.title}:
+            {typeof (element as any).title === "string" 
+              ? (element as any).title 
+              : Array.isArray((element as any).title) 
+                ? (element as any).title.map((t: any) => t.text).join("") 
+                : ""}:
           </span>
           <span style={{ display: "inline-flex", flexWrap: "wrap", gap: "4px" }}>
             {children}
