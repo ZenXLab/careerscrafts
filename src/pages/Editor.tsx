@@ -19,10 +19,12 @@ import PDFUploadModal from "@/components/editor/PDFUploadModal";
 import VersionCompareModal from "@/components/editor/VersionCompareModal";
 import TemplateSwitchModal from "@/components/editor/TemplateSwitchModal";
 import ATSScoreWidget from "@/components/editor/ATSScoreWidget";
+import ProfilePhotoUpload from "@/components/editor/ProfilePhotoUpload";
+import ThemeManager from "@/components/editor/ThemeManager";
 import { useATSScore } from "@/hooks/useATSScore";
 import { useResumeVersions } from "@/hooks/useResumeVersions";
 import { exportToPDF } from "@/utils/pdfExport";
-import { FileDown, Menu } from "lucide-react";
+import { FileDown, Menu, Palette as PaletteIcon } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const Editor = () => {
@@ -71,6 +73,7 @@ const Editor = () => {
   const [showPdfUpload, setShowPdfUpload] = useState(false);
   const [showVersionCompare, setShowVersionCompare] = useState(false);
   const [showTemplateSwitch, setShowTemplateSwitch] = useState(false);
+  const [showThemeManager, setShowThemeManager] = useState(false);
   const [contextualPanelMode, setContextualPanelMode] = useState<"ai-suggestions" | "jd-mapping" | "ats-warnings" | null>(null);
   
   // Design settings
@@ -107,6 +110,7 @@ const Editor = () => {
     setShowPdfUpload(false);
     setShowVersionCompare(false);
     setShowTemplateSwitch(false);
+    setShowThemeManager(false);
     setContextualPanelMode(null);
   }, []);
 
@@ -277,6 +281,26 @@ const Editor = () => {
     toast({ title: "Version restored" });
   };
 
+  const handleProfilePhotoChange = (url: string | null) => {
+    const newData = {
+      ...resumeData,
+      personalInfo: {
+        ...resumeData.personalInfo,
+        photo: url || undefined
+      }
+    };
+    setResumeData(newData);
+  };
+
+  const handleApplyTheme = (theme: Partial<{ accent_color: string }>) => {
+    if (theme.accent_color) {
+      setDesignSettings(prev => ({
+        ...prev,
+        accentColor: theme.accent_color!
+      }));
+    }
+  };
+
   // Mobile read-only view
   if (isMobile) {
     return (
@@ -351,6 +375,29 @@ const Editor = () => {
             isHighScore={isHighScore}
             compact
           />
+          
+          <div className="h-6 w-px bg-border hidden sm:block" />
+
+          {/* Profile Photo Upload */}
+          <ProfilePhotoUpload
+            currentPhotoUrl={resumeData.personalInfo.photo}
+            onPhotoChange={handleProfilePhotoChange}
+            className="hidden sm:block"
+          />
+          
+          <div className="h-6 w-px bg-border hidden sm:block" />
+          
+          {/* Theme Manager Button */}
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => setShowThemeManager(true)}
+            className="hidden sm:flex gap-1.5"
+            title="Manage color themes"
+          >
+            <PaletteIcon className="w-4 h-4" />
+            <span>Themes</span>
+          </Button>
           
           <div className="h-6 w-px bg-border hidden sm:block" />
           
@@ -459,6 +506,13 @@ const Editor = () => {
         onClose={() => setShowDesignPanel(false)}
         settings={designSettings}
         onSettingsChange={setDesignSettings}
+      />
+
+      <ThemeManager
+        isOpen={showThemeManager}
+        onClose={() => setShowThemeManager(false)}
+        currentAccentColor={designSettings.accentColor}
+        onApplyTheme={handleApplyTheme}
       />
 
       <PDFUploadModal
