@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Lock, Unlock, GripVertical, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
+import { GripVertical, Sparkles } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
@@ -8,28 +8,19 @@ interface SectionWrapperProps {
   id: string;
   title: string;
   children: React.ReactNode;
-  locked: boolean;
-  onToggleLock: () => void;
   onAiImprove?: () => void;
   accentColor?: string;
   isDraggable?: boolean;
-  isCollapsible?: boolean;
-  defaultCollapsed?: boolean;
 }
 
 export const SectionWrapper = ({
   id,
   title,
   children,
-  locked,
-  onToggleLock,
   onAiImprove,
   accentColor = "hsl(221, 83%, 53%)",
   isDraggable = true,
-  isCollapsible = false,
-  defaultCollapsed = false,
 }: SectionWrapperProps) => {
-  const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
   const [isHovered, setIsHovered] = useState(false);
 
   const {
@@ -41,7 +32,7 @@ export const SectionWrapper = ({
     isDragging,
   } = useSortable({ 
     id,
-    disabled: locked || !isDraggable,
+    disabled: !isDraggable,
   });
 
   const style = {
@@ -62,25 +53,22 @@ export const SectionWrapper = ({
     >
       {/* Section Header with Controls */}
       <div 
-        className={`
-          flex items-center gap-2 mb-2 pb-1 border-b
-          ${locked ? "opacity-70" : ""}
-        `}
+        className="flex items-center gap-2 mb-2 pb-1 border-b"
         style={{ borderColor: accentColor }}
       >
-        {/* Drag Handle */}
-        {isDraggable && !locked && (
+        {/* Drag Handle - visible on hover */}
+        {isDraggable && (
           <button
             {...attributes}
             {...listeners}
             className={`
               p-1 rounded cursor-grab active:cursor-grabbing
-              hover:bg-primary/10 transition-colors
-              ${isHovered ? "opacity-100" : "opacity-0"}
+              hover:bg-gray-100 transition-all duration-200
+              ${isHovered ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2"}
             `}
             title="Drag to reorder"
           >
-            <GripVertical className="w-4 h-4 text-muted-foreground" />
+            <GripVertical className="w-4 h-4 text-gray-400" />
           </button>
         )}
 
@@ -92,72 +80,23 @@ export const SectionWrapper = ({
           {title}
         </h2>
 
-        {/* Controls */}
-        <div className={`flex items-center gap-1 ${isHovered ? "opacity-100" : "opacity-0"} transition-opacity`}>
-          {/* AI Improve Button */}
-          {onAiImprove && !locked && (
-            <button
-              onClick={onAiImprove}
-              className="p-1 rounded hover:bg-primary/10 transition-colors"
-              title="AI improve this section"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-primary" />
-            </button>
-          )}
-
-          {/* Collapse Toggle */}
-          {isCollapsible && (
-            <button
-              onClick={() => setIsCollapsed(!isCollapsed)}
-              className="p-1 rounded hover:bg-muted transition-colors"
-              title={isCollapsed ? "Expand" : "Collapse"}
-            >
-              {isCollapsed ? (
-                <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
-              ) : (
-                <ChevronUp className="w-3.5 h-3.5 text-muted-foreground" />
-              )}
-            </button>
-          )}
-
-          {/* Lock Toggle */}
+        {/* AI Improve Button - visible on hover */}
+        {onAiImprove && (
           <button
-            onClick={onToggleLock}
-            className={`p-1 rounded transition-colors ${
-              locked 
-                ? "bg-amber-500/10 text-amber-500 hover:bg-amber-500/20" 
-                : "hover:bg-muted text-muted-foreground"
-            }`}
-            title={locked ? "Unlock section" : "Lock section"}
+            onClick={onAiImprove}
+            className={`
+              p-1.5 rounded hover:bg-blue-50 transition-all duration-200
+              ${isHovered ? "opacity-100 translate-x-0" : "opacity-0 translate-x-2"}
+            `}
+            title="AI improve this section"
           >
-            {locked ? (
-              <Lock className="w-3.5 h-3.5" />
-            ) : (
-              <Unlock className="w-3.5 h-3.5" />
-            )}
+            <Sparkles className="w-3.5 h-3.5 text-blue-500" />
           </button>
-        </div>
+        )}
       </div>
 
       {/* Section Content */}
-      <motion.div
-        initial={false}
-        animate={{ 
-          height: isCollapsed ? 0 : "auto",
-          opacity: isCollapsed ? 0 : 1
-        }}
-        transition={{ duration: 0.2 }}
-        className="overflow-hidden"
-      >
-        <div className={locked ? "pointer-events-none select-none" : ""}>
-          {children}
-        </div>
-      </motion.div>
-
-      {/* Locked Overlay */}
-      {locked && (
-        <div className="absolute inset-0 bg-muted/5 pointer-events-none" />
-      )}
+      <div>{children}</div>
     </motion.div>
   );
 };

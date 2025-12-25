@@ -10,7 +10,6 @@ interface InlineEditableFieldProps {
   placeholder?: string;
   className?: string;
   style?: React.CSSProperties;
-  locked?: boolean;
   role?: string;
   multiline?: boolean;
   maxLength?: number;
@@ -23,7 +22,6 @@ export const InlineEditableField = ({
   placeholder = "Click to edit",
   className = "",
   style,
-  locked = false,
   role = "Professional",
   multiline = false,
   maxLength,
@@ -34,7 +32,6 @@ export const InlineEditableField = ({
   const [selectedText, setSelectedText] = useState("");
   const [aiPreview, setAiPreview] = useState<string | null>(null);
   const editRef = useRef<HTMLDivElement>(null);
-  const aiMenuRef = useRef<HTMLDivElement>(null);
 
   const { improveText, isLoading, clearPreview } = useAITextImprovement({
     role,
@@ -60,7 +57,6 @@ export const InlineEditableField = ({
   }, [isEditing]);
 
   const handleClick = () => {
-    if (locked) return;
     setIsEditing(true);
   };
 
@@ -87,6 +83,15 @@ export const InlineEditableField = ({
     } else if (e.key === "Enter" && multiline && !e.shiftKey) {
       e.preventDefault();
       handleBlur();
+    }
+    // Handle Tab for indentation (future feature)
+    if (e.key === "Tab") {
+      e.preventDefault();
+    }
+    // Handle backspace on empty bullet
+    if (e.key === "Backspace" && fieldType === "bullet" && !localValue) {
+      e.preventDefault();
+      // Could trigger bullet removal here via callback
     }
   };
 
@@ -115,14 +120,12 @@ export const InlineEditableField = ({
   const handleAiAction = async (action: AIAction) => {
     const textToImprove = selectedText || localValue;
     if (!textToImprove) return;
-    
     await improveText(action, textToImprove);
   };
 
   const acceptAiSuggestion = () => {
     if (aiPreview) {
       if (selectedText) {
-        // Replace only selected text
         const newValue = localValue.replace(selectedText, aiPreview);
         setLocalValue(newValue);
         onChange(newValue);
@@ -130,7 +133,6 @@ export const InlineEditableField = ({
           editRef.current.innerText = newValue;
         }
       } else {
-        // Replace entire value
         setLocalValue(aiPreview);
         onChange(aiPreview);
         if (editRef.current) {
@@ -154,7 +156,7 @@ export const InlineEditableField = ({
       {/* Editable Content */}
       <div
         ref={editRef}
-        contentEditable={!locked && isEditing}
+        contentEditable={isEditing}
         suppressContentEditableWarning
         onClick={handleClick}
         onBlur={handleBlur}
@@ -162,13 +164,12 @@ export const InlineEditableField = ({
         onInput={handleInput}
         onMouseUp={handleTextSelect}
         className={`
-          outline-none transition-all duration-150
-          ${locked ? "cursor-not-allowed opacity-70" : "cursor-text"}
+          outline-none transition-all duration-150 cursor-text
           ${isEditing 
-            ? "bg-primary/5 ring-1 ring-primary/30 rounded px-1 -mx-1" 
-            : "hover:bg-primary/5 hover:ring-1 hover:ring-primary/20 rounded px-1 -mx-1"
+            ? "bg-blue-50/50 ring-1 ring-blue-200 rounded px-1 -mx-1" 
+            : "hover:bg-blue-50/30 rounded px-1 -mx-1"
           }
-          ${!localValue && !isEditing ? "text-muted-foreground italic" : ""}
+          ${!localValue && !isEditing ? "text-gray-400 italic" : ""}
           ${className}
         `}
         style={{ minHeight: multiline ? "3em" : "1.2em" }}
@@ -185,25 +186,25 @@ export const InlineEditableField = ({
             exit={{ opacity: 0, y: 5, scale: 0.98 }}
             className="absolute left-0 right-0 top-full mt-2 z-50"
           >
-            <div className="bg-card border border-primary/30 rounded-lg shadow-xl p-3">
+            <div className="bg-white border border-blue-200 rounded-lg shadow-xl p-3">
               <div className="flex items-start gap-2 mb-2">
-                <Sparkles className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                <Sparkles className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
                 <div className="flex-1">
-                  <p className="text-xs text-muted-foreground mb-1">AI Suggestion:</p>
-                  <p className="text-sm text-foreground leading-relaxed">{aiPreview}</p>
+                  <p className="text-xs text-gray-500 mb-1">AI Suggestion:</p>
+                  <p className="text-sm text-gray-800 leading-relaxed">{aiPreview}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2 justify-end">
                 <button
                   onClick={rejectAiSuggestion}
-                  className="flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
+                  className="flex items-center gap-1 px-2 py-1 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
                 >
                   <X className="w-3 h-3" />
                   Reject
                 </button>
                 <button
                   onClick={acceptAiSuggestion}
-                  className="flex items-center gap-1 px-3 py-1 text-xs bg-primary text-primary-foreground hover:bg-primary/90 rounded transition-colors"
+                  className="flex items-center gap-1 px-3 py-1 text-xs bg-blue-500 text-white hover:bg-blue-600 rounded transition-colors"
                 >
                   <Check className="w-3 h-3" />
                   Accept
@@ -216,17 +217,16 @@ export const InlineEditableField = ({
 
       {/* AI Enhancement Menu */}
       <AnimatePresence>
-        {showAiMenu && !locked && !aiPreview && (
+        {showAiMenu && !aiPreview && (
           <motion.div
-            ref={aiMenuRef}
             initial={{ opacity: 0, y: -10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             className="absolute -top-12 left-1/2 -translate-x-1/2 z-50"
           >
-            <div className="bg-card border border-border rounded-lg shadow-xl p-1 flex items-center gap-0.5">
+            <div className="bg-white border border-gray-200 rounded-lg shadow-xl p-1 flex items-center gap-0.5">
               {isLoading ? (
-                <div className="flex items-center gap-2 px-3 py-1.5 text-xs text-muted-foreground">
+                <div className="flex items-center gap-2 px-3 py-1.5 text-xs text-gray-500">
                   <Loader2 className="w-3 h-3 animate-spin" />
                   <span>Improving...</span>
                 </div>
@@ -234,40 +234,40 @@ export const InlineEditableField = ({
                 <>
                   <button
                     onClick={() => handleAiAction("improve")}
-                    className="flex items-center gap-1 px-2 py-1.5 text-xs hover:bg-primary/10 hover:text-primary rounded transition-colors"
+                    className="flex items-center gap-1 px-2 py-1.5 text-xs hover:bg-blue-50 hover:text-blue-600 rounded transition-colors"
                     title="Improve wording"
                   >
                     <Wand2 className="w-3 h-3" />
-                    <span className="hidden sm:inline">Improve</span>
+                    <span>Improve</span>
                   </button>
                   <button
                     onClick={() => handleAiAction("quantify")}
-                    className="flex items-center gap-1 px-2 py-1.5 text-xs hover:bg-primary/10 hover:text-primary rounded transition-colors"
+                    className="flex items-center gap-1 px-2 py-1.5 text-xs hover:bg-blue-50 hover:text-blue-600 rounded transition-colors"
                     title="Add metrics"
                   >
                     <Target className="w-3 h-3" />
-                    <span className="hidden sm:inline">Quantify</span>
+                    <span>Quantify</span>
                   </button>
                   <button
                     onClick={() => handleAiAction("fix")}
-                    className="flex items-center gap-1 px-2 py-1.5 text-xs hover:bg-primary/10 hover:text-primary rounded transition-colors"
+                    className="flex items-center gap-1 px-2 py-1.5 text-xs hover:bg-blue-50 hover:text-blue-600 rounded transition-colors"
                     title="Fix grammar"
                   >
                     <Type className="w-3 h-3" />
-                    <span className="hidden sm:inline">Fix</span>
+                    <span>Fix</span>
                   </button>
                   <button
                     onClick={() => handleAiAction("shorten")}
-                    className="flex items-center gap-1 px-2 py-1.5 text-xs hover:bg-primary/10 hover:text-primary rounded transition-colors"
+                    className="flex items-center gap-1 px-2 py-1.5 text-xs hover:bg-blue-50 hover:text-blue-600 rounded transition-colors"
                     title="Make concise"
                   >
                     <Sparkles className="w-3 h-3" />
-                    <span className="hidden sm:inline">Shorten</span>
+                    <span>Shorten</span>
                   </button>
-                  <div className="w-px h-5 bg-border mx-1" />
+                  <div className="w-px h-5 bg-gray-200 mx-1" />
                   <button
                     onClick={() => setShowAiMenu(false)}
-                    className="p-1.5 hover:bg-destructive/10 hover:text-destructive rounded transition-colors"
+                    className="p-1.5 hover:bg-red-50 hover:text-red-500 rounded transition-colors"
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -277,13 +277,6 @@ export const InlineEditableField = ({
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Lock indicator */}
-      {locked && (
-        <div className="absolute top-0 right-0 w-4 h-4 text-muted-foreground/50">
-          🔒
-        </div>
-      )}
     </div>
   );
 };
