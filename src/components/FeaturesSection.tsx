@@ -70,10 +70,11 @@ const FeaturesSection = () => {
           className="text-center mb-16 md:mb-20"
         >
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-light tracking-tight mb-4">
-            Built for <span className="font-serif italic">serious</span> careers
+            Why most resumes fail — and{" "}
+            <span className="font-serif italic">yours won't</span>
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Every feature designed to increase your chances of landing interviews, not just making pretty documents.
+            Most resumes don't get rejected. They get ignored. CareersCraft fixes that with professional document design, ATS intelligence, and career-aware AI.
           </p>
         </motion.div>
 
