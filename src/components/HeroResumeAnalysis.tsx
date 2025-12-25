@@ -1,92 +1,110 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
-import { Shield, Sparkles, Check, TrendingUp, AlertCircle } from "lucide-react";
+import { Shield, Sparkles, Check, TrendingUp, ChevronLeft, ChevronRight } from "lucide-react";
 
-// Abhishek Panda's Resume Data (parsed from uploaded PDF)
+// Abhishek Panda's Resume Data (parsed from uploaded PDF) - Split into 2 pages
 const uploadedResumeData = {
-  personalInfo: {
-    name: "Abhishek Panda",
-    title: "Technical Architect / Full Stack Architect",
-    email: "hello@abhishekpanda.com",
-    phone: "+91-8917549065",
-    location: "Bengaluru, India",
-    linkedin: "abhishekpandaofficial",
-    website: "abhishekpanda.com",
+  page1: {
+    personalInfo: {
+      name: "Abhishek Panda",
+      title: "Technical Architect / Full Stack Architect",
+      email: "hello@abhishekpanda.com",
+      phone: "+91-8917549065",
+      location: "Bengaluru, India",
+      linkedin: "abhishekpandaofficial",
+      website: "abhishekpanda.com",
+    },
+    summary: "Technical Full Stack Architect with 12+ years designing and delivering large-scale enterprise platforms across Banking, Airlines, Fintech, Automotive, and GCC public-sector aligned environments. Specialized in .NET Core, Azure/AWS cloud architecture, microservices, event‑driven systems, and high‑availability distributed platforms supporting millions of transactions.",
+    highlights: [
+      "Led 10–18 engineer teams",
+      "$1.2M+ in cloud cost savings",
+      "35% reduction in production downtime",
+      "20–40% performance improvement"
+    ],
+    experience: [
+      {
+        id: "exp1",
+        company: "Solera",
+        position: "Technical Architect / Engineering Lead",
+        location: "Bangalore, India",
+        startDate: "08/2022",
+        endDate: "11/2025",
+        project: "Automotive / Fleet Management : GFP-Smart Drive",
+        bullets: [
+          "Architected cloud-native .NET Core microservices on Azure using App Services, Functions, Azure SQL, Service Bus, and API Management",
+          "Designed event-driven, high-availability architecture for real-time fleet telemetry and dispatch optimization",
+          "Implemented strong API security: OAuth2, JWT validation, rate limiting, IP filtering",
+          "Spearheaded CI/CD automation with Azure DevOps, Docker, Kubernetes, Terraform"
+        ]
+      }
+    ],
+    skills: [
+      { category: "Cloud", items: ["Azure", "AWS", "Kubernetes", "Docker", "Terraform"] },
+      { category: "Backend", items: ["C#", ".NET Core", "ASP.NET", "gRPC", "REST APIs"] },
+    ]
   },
-  summary: "Technical Full Stack Architect with 12+ years designing and delivering large-scale enterprise platforms across Banking, Airlines, Fintech, Automotive, and GCC public-sector aligned environments. Specialized in .NET Core, Azure/AWS cloud architecture, microservices, event‑driven systems, and high‑availability distributed platforms supporting millions of transactions.",
-  highlights: [
-    "Led 10–18 engineer teams",
-    "$1.2M+ in cloud cost savings",
-    "35% reduction in production downtime",
-    "20–40% performance improvement"
-  ],
-  experience: [
-    {
-      id: "exp1",
-      company: "Solera",
-      position: "Technical Architect / Engineering Lead",
-      location: "Bangalore, India",
-      startDate: "08/2022",
-      endDate: "11/2025",
-      current: true,
-      project: "Automotive / Fleet Management : GFP-Smart Drive",
-      bullets: [
-        "Architected cloud-native .NET Core microservices on Azure using App Services, Functions, Azure SQL, Service Bus, and API Management",
-        "Designed event-driven, high-availability architecture for real-time fleet telemetry and dispatch optimization",
-        "Implemented strong API security: OAuth2, JWT validation, rate limiting, IP filtering",
-        "Spearheaded CI/CD automation with Azure DevOps, Docker, Kubernetes, Terraform; delivered zero-downtime deployments",
-        "Improved system performance by 20% and delivered significant cloud cost savings via right-sizing"
-      ]
-    },
-    {
-      id: "exp2",
-      company: "Wells Fargo",
-      position: "Assistant Vice President / Technical Architect",
-      location: "Hyderabad, India",
-      startDate: "05/2020",
-      endDate: "07/2022",
-      current: false,
-      project: "Wealth & Investment Management Technology : WIMT",
-      bullets: [
-        "Architected and managed 14+ mission-critical brokerage platforms in a regulated environment",
-        "Designed event-driven microservices using .NET Core, Kafka, and AWS Lambda for analytics and trade workflows",
-        "Built enterprise cloud infrastructure using AWS IAM, KMS, VPC, EC2, SQS, RDS, CloudWatch",
-        "Improved processing efficiency by 35% through architecture modernization",
-        "Delivered $500K+ annual AWS cost savings via resource right-sizing and autoscaling strategies"
-      ]
-    },
-  ],
-  skills: [
-    { category: "Cloud", items: ["Azure", "AWS", "Kubernetes", "Docker", "Terraform"] },
-    { category: "Backend", items: ["C#", ".NET Core", "ASP.NET", "gRPC", "REST APIs"] },
-    { category: "DevOps", items: ["Azure DevOps", "GitHub Actions", "Jenkins", "ArgoCD"] },
-    { category: "Databases", items: ["SQL Server", "PostgreSQL", "MongoDB", "DynamoDB"] }
-  ],
-  education: [
-    {
-      school: "Biju Patnaik University of Technology",
-      degree: "B.Tech",
-      field: "Computer Science",
-      gpa: "7.2/10",
-      endDate: "2014"
-    }
-  ],
-  certifications: [
-    "Azure Solutions Architect (AZ-305) – Pursuing",
-    "AWS Solutions Architect – Associate – Pursuing"
-  ],
-  awards: [
-    "Solera Employee Of the Month : May 2024",
-    "Wells Fargo Employee of the Year : 2021"
-  ]
+  page2: {
+    experience: [
+      {
+        id: "exp2",
+        company: "Wells Fargo",
+        position: "Assistant Vice President / Technical Architect",
+        location: "Hyderabad, India",
+        startDate: "05/2020",
+        endDate: "07/2022",
+        project: "Wealth & Investment Management Technology : WIMT",
+        bullets: [
+          "Architected and managed 14+ mission-critical brokerage platforms in a regulated environment",
+          "Designed event-driven microservices using .NET Core, Kafka, and AWS Lambda for analytics and trade workflows",
+          "Built enterprise cloud infrastructure using AWS IAM, KMS, VPC, EC2, SQS, RDS, CloudWatch",
+          "Improved processing efficiency by 35% through architecture modernization",
+          "Delivered $500K+ annual AWS cost savings via resource right-sizing and autoscaling strategies"
+        ]
+      },
+      {
+        id: "exp3",
+        company: "Emirates Group",
+        position: "Senior Software Developer",
+        location: "Dubai, UAE",
+        startDate: "01/2017",
+        endDate: "04/2020",
+        project: "Airline Operations: Flight & Crew Management",
+        bullets: [
+          "Developed real-time flight operations dashboard serving 500+ airline staff",
+          "Integrated crew scheduling system with 99.9% uptime",
+          "Reduced manual scheduling errors by 45% through automation"
+        ]
+      }
+    ],
+    skills: [
+      { category: "DevOps", items: ["Azure DevOps", "GitHub Actions", "Jenkins", "ArgoCD"] },
+      { category: "Databases", items: ["SQL Server", "PostgreSQL", "MongoDB", "DynamoDB"] }
+    ],
+    education: [
+      {
+        school: "Biju Patnaik University of Technology",
+        degree: "B.Tech",
+        field: "Computer Science",
+        gpa: "7.2/10",
+        endDate: "2014"
+      }
+    ],
+    certifications: [
+      "Azure Solutions Architect (AZ-305) – Pursuing",
+      "AWS Solutions Architect – Associate – Pursuing"
+    ],
+    awards: [
+      "Solera Employee Of the Month : May 2024",
+      "Wells Fargo Employee of the Year : 2021"
+    ]
+  }
 };
 
-// AI Insights detected from the resume
+// AI Insights
 const aiInsights = [
-  { id: 1, type: "strength", label: "Quantified Impact", detail: "Multiple metrics detected ($1.2M savings, 35% improvement)", position: "top-left" },
-  { id: 2, type: "keyword", label: "ATS Keywords", detail: "32 high-value keywords matched", position: "top-right" },
-  { id: 3, type: "structure", label: "Strong Structure", detail: "Clear hierarchy, proper sections", position: "bottom-left" },
-  { id: 4, type: "improvement", label: "Enhancement Available", detail: "Add certification dates for +3 ATS points", position: "bottom-right" }
+  { id: 1, type: "strength", label: "Quantified Impact", detail: "$1.2M savings, 35% improvement" },
+  { id: 2, type: "keyword", label: "32 ATS Keywords", detail: "High-value matches detected" },
+  { id: 3, type: "structure", label: "Strong Structure", detail: "Clear hierarchy confirmed" },
 ];
 
 // A4 dimensions at 96 DPI
@@ -101,25 +119,23 @@ interface HeroResumeAnalysisProps {
 const HeroResumeAnalysis = ({ onEditResume, onUploadNew }: HeroResumeAnalysisProps) => {
   const [atsScore, setAtsScore] = useState(0);
   const [phase, setPhase] = useState(0);
-  const [activeInsight, setActiveInsight] = useState<number | null>(null);
-  const finalAtsScore = 89; // Honest score for a senior resume
+  const [currentPage, setCurrentPage] = useState(0); // 0 = show both pages (book view)
+  const finalAtsScore = 89;
 
   useEffect(() => {
-    // Phase timeline for progressive reveal
     const phases = [
-      { delay: 300, phase: 1 },   // Resume appears
-      { delay: 1200, phase: 2 },  // ATS score starts
-      { delay: 2500, phase: 3 },  // Insights appear
-      { delay: 4000, phase: 4 },  // Auto-fix preview
+      { delay: 300, phase: 1 },
+      { delay: 1200, phase: 2 },
+      { delay: 2500, phase: 3 },
+      { delay: 4000, phase: 4 },
     ];
 
     phases.forEach(({ delay, phase: p }) => {
       setTimeout(() => setPhase(p), delay);
     });
 
-    // ATS score count-up animation (600-800ms as specified)
     setTimeout(() => {
-      const duration = 700; // 700ms
+      const duration = 700;
       const steps = 30;
       const increment = finalAtsScore / steps;
       let current = 0;
@@ -139,49 +155,138 @@ const HeroResumeAnalysis = ({ onEditResume, onUploadNew }: HeroResumeAnalysisPro
   const data = uploadedResumeData;
 
   return (
-    <div className="relative w-full max-w-[520px] mx-auto">
+    <div className="relative w-full max-w-[680px] mx-auto">
       {/* Ambient Glow */}
       <motion.div
         initial={{ opacity: 0 }}
-        animate={{ opacity: phase >= 1 ? 0.4 : 0 }}
+        animate={{ opacity: phase >= 1 ? 0.5 : 0 }}
         transition={{ duration: 2 }}
-        className="absolute inset-0 bg-primary/10 rounded-full blur-[120px] -z-10 scale-150"
+        className="absolute inset-0 bg-primary/10 rounded-full blur-[150px] -z-10 scale-125"
       />
 
-      {/* Fixed A4 Page Container */}
+      {/* Book Container */}
       <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: phase >= 1 ? 1 : 0, y: phase >= 1 ? 0 : 40 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
-        className="relative"
+        initial={{ opacity: 0, y: 40, rotateY: -10 }}
+        animate={{ 
+          opacity: phase >= 1 ? 1 : 0, 
+          y: phase >= 1 ? 0 : 40,
+          rotateY: phase >= 1 ? 0 : -10
+        }}
+        transition={{ duration: 1, ease: "easeOut" }}
+        className="relative perspective-1000"
+        style={{ perspective: "1500px" }}
       >
-        {/* Paper with Shadow */}
-        <div 
-          className="relative bg-white rounded-sm overflow-hidden mx-auto"
-          style={{
-            width: `${A4_WIDTH * 0.45}px`, // Scale for display
-            height: `${A4_HEIGHT * 0.45}px`,
-            boxShadow: `
-              0 25px 60px -15px rgba(0, 0, 0, 0.3),
-              0 15px 30px -10px rgba(0, 0, 0, 0.2),
-              0 0 0 1px rgba(0, 0, 0, 0.05)
-            `,
-          }}
-        >
-          {/* Resume Content (Scaled) */}
+        {/* Book Wrapper with 3D Effect */}
+        <div className="relative flex justify-center items-start gap-1">
+          {/* Book Spine Shadow */}
           <div 
-            className="origin-top-left"
+            className="absolute top-0 left-1/2 -translate-x-1/2 w-4 h-full bg-gradient-to-r from-black/20 via-black/5 to-black/20 z-10"
+            style={{ marginTop: "4px" }}
+          />
+
+          {/* Left Page (Page 1) */}
+          <motion.div
+            initial={{ rotateY: 15, opacity: 0 }}
+            animate={{ 
+              rotateY: phase >= 1 ? 0 : 15, 
+              opacity: phase >= 1 ? 1 : 0 
+            }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="relative origin-right"
             style={{
-              width: `${A4_WIDTH}px`,
-              height: `${A4_HEIGHT}px`,
-              transform: `scale(0.45)`,
+              transformStyle: "preserve-3d",
+              transform: "rotateY(-2deg)",
             }}
           >
-            <ResumeDocument data={data} phase={phase} />
-          </div>
+            <div 
+              className="relative bg-white rounded-l-sm overflow-hidden"
+              style={{
+                width: `${A4_WIDTH * 0.33}px`,
+                height: `${A4_HEIGHT * 0.38}px`,
+                boxShadow: `
+                  -15px 0 40px -10px rgba(0, 0, 0, 0.25),
+                  -5px 0 15px -5px rgba(0, 0, 0, 0.15),
+                  inset 1px 0 3px rgba(0, 0, 0, 0.05)
+                `,
+              }}
+            >
+              {/* Page Edge Effect */}
+              <div className="absolute right-0 top-0 bottom-0 w-1 bg-gradient-to-l from-gray-100 to-transparent" />
+              
+              {/* Resume Content Page 1 */}
+              <div 
+                className="origin-top-left"
+                style={{
+                  width: `${A4_WIDTH}px`,
+                  height: `${A4_HEIGHT}px`,
+                  transform: `scale(0.33)`,
+                }}
+              >
+                <ResumePageOne data={data.page1} phase={phase} />
+              </div>
+            </div>
+            
+            {/* Page Number */}
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[8px] text-gray-400 font-medium">
+              1
+            </div>
+          </motion.div>
+
+          {/* Right Page (Page 2) */}
+          <motion.div
+            initial={{ rotateY: -15, opacity: 0 }}
+            animate={{ 
+              rotateY: phase >= 1 ? 0 : -15, 
+              opacity: phase >= 1 ? 1 : 0 
+            }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+            className="relative origin-left"
+            style={{
+              transformStyle: "preserve-3d",
+              transform: "rotateY(2deg)",
+            }}
+          >
+            <div 
+              className="relative bg-white rounded-r-sm overflow-hidden"
+              style={{
+                width: `${A4_WIDTH * 0.33}px`,
+                height: `${A4_HEIGHT * 0.38}px`,
+                boxShadow: `
+                  15px 0 40px -10px rgba(0, 0, 0, 0.25),
+                  5px 0 15px -5px rgba(0, 0, 0, 0.15),
+                  inset -1px 0 3px rgba(0, 0, 0, 0.05)
+                `,
+              }}
+            >
+              {/* Page Edge Effect */}
+              <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-r from-gray-100 to-transparent" />
+              
+              {/* Resume Content Page 2 */}
+              <div 
+                className="origin-top-left"
+                style={{
+                  width: `${A4_WIDTH}px`,
+                  height: `${A4_HEIGHT}px`,
+                  transform: `scale(0.33)`,
+                }}
+              >
+                <ResumePageTwo data={data.page2} phase={phase} />
+              </div>
+            </div>
+            
+            {/* Page Number */}
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[8px] text-gray-400 font-medium">
+              2
+            </div>
+          </motion.div>
         </div>
 
-        {/* ATS Score Panel */}
+        {/* Book Base Shadow */}
+        <div 
+          className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-[90%] h-8 bg-black/10 blur-xl rounded-full"
+        />
+
+        {/* ATS Score Panel - Top Right */}
         <motion.div
           initial={{ opacity: 0, x: 30, scale: 0.9 }}
           animate={{ 
@@ -190,9 +295,9 @@ const HeroResumeAnalysis = ({ onEditResume, onUploadNew }: HeroResumeAnalysisPro
             scale: phase >= 2 ? 1 : 0.9
           }}
           transition={{ duration: 0.6, ease: "easeOut" }}
-          className="absolute -right-4 md:-right-16 top-6"
+          className="absolute -right-6 md:-right-24 top-4"
         >
-          <div className="bg-card/95 backdrop-blur-xl border border-border rounded-xl p-4 shadow-xl">
+          <div className="bg-card/95 backdrop-blur-xl border border-border rounded-xl p-4 shadow-2xl">
             <div className="flex items-center gap-2 mb-2">
               <Shield className="w-4 h-4 text-emerald-500" />
               <span className="text-[10px] text-muted-foreground font-semibold tracking-widest uppercase">
@@ -232,9 +337,9 @@ const HeroResumeAnalysis = ({ onEditResume, onUploadNew }: HeroResumeAnalysisPro
             x: phase >= 3 ? 0 : -30
           }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="absolute -left-4 md:-left-20 top-16"
+          className="absolute -left-6 md:-left-28 top-8"
         >
-          <div className="bg-card/95 backdrop-blur-xl border border-primary/30 rounded-xl p-3 shadow-lg max-w-[180px]">
+          <div className="bg-card/95 backdrop-blur-xl border border-primary/30 rounded-xl p-3 shadow-xl max-w-[160px]">
             <div className="flex items-center gap-1.5 mb-2">
               <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
               <span className="text-[9px] text-primary font-semibold tracking-widest uppercase">
@@ -242,14 +347,14 @@ const HeroResumeAnalysis = ({ onEditResume, onUploadNew }: HeroResumeAnalysisPro
               </span>
             </div>
             <p className="text-[10px] text-muted-foreground leading-relaxed">
-              <span className="text-emerald-500 font-medium">Quantified impact detected</span>
+              <span className="text-emerald-500 font-medium">Quantified impact</span>
               <br />
-              <span className="text-foreground/70">$1.2M savings, 35% improvement — recruiter priority signal</span>
+              <span className="text-foreground/70">Recruiter priority signal</span>
             </p>
           </div>
         </motion.div>
 
-        {/* Keyword Highlight Badge */}
+        {/* Keywords Badge - Bottom Left */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ 
@@ -257,9 +362,9 @@ const HeroResumeAnalysis = ({ onEditResume, onUploadNew }: HeroResumeAnalysisPro
             y: phase >= 3 ? 0 : 20
           }}
           transition={{ duration: 0.5, delay: 0.3 }}
-          className="absolute -left-4 md:-left-16 bottom-48"
+          className="absolute -left-6 md:-left-20 bottom-20"
         >
-          <div className="bg-card/90 backdrop-blur-md border border-emerald-500/30 rounded-lg p-3 shadow-md">
+          <div className="bg-card/90 backdrop-blur-md border border-emerald-500/30 rounded-lg p-3 shadow-lg">
             <div className="flex items-center gap-1.5 mb-1">
               <TrendingUp className="w-3 h-3 text-emerald-500" />
               <span className="text-[9px] text-emerald-500 font-semibold tracking-widest uppercase">
@@ -267,12 +372,12 @@ const HeroResumeAnalysis = ({ onEditResume, onUploadNew }: HeroResumeAnalysisPro
               </span>
             </div>
             <p className="text-[10px] text-muted-foreground">
-              <span className="text-foreground">32</span> ATS keywords matched
+              <span className="text-foreground font-semibold">32</span> matches
             </p>
           </div>
         </motion.div>
 
-        {/* Auto-Fix Preview */}
+        {/* Auto-Fix Preview - Bottom Right */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ 
@@ -280,27 +385,23 @@ const HeroResumeAnalysis = ({ onEditResume, onUploadNew }: HeroResumeAnalysisPro
             scale: phase >= 4 ? 1 : 0.95
           }}
           transition={{ duration: 0.4 }}
-          className="absolute -right-4 md:-right-20 bottom-32"
+          className="absolute -right-6 md:-right-24 bottom-16"
         >
-          <div className="bg-card/90 backdrop-blur-md border border-amber-500/30 rounded-lg p-3 shadow-md">
+          <div className="bg-card/90 backdrop-blur-md border border-amber-500/30 rounded-lg p-3 shadow-lg">
             <div className="flex items-center gap-1.5 mb-1.5">
               <Sparkles className="w-3 h-3 text-amber-500" />
               <span className="text-[9px] text-amber-500 font-semibold tracking-widest uppercase">
                 Auto-fix Available
               </span>
             </div>
-            <div className="text-[10px] space-y-1">
-              <p className="text-muted-foreground">
-                Add certification dates
-              </p>
-              <p className="text-emerald-500 text-[9px]">
-                +3 ATS points
-              </p>
+            <div className="text-[10px] space-y-0.5">
+              <p className="text-muted-foreground">Add certification dates</p>
+              <p className="text-emerald-500 text-[9px] font-medium">+3 ATS points</p>
             </div>
           </div>
         </motion.div>
 
-        {/* Resume State Timeline */}
+        {/* Resume Timeline */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ 
@@ -308,9 +409,9 @@ const HeroResumeAnalysis = ({ onEditResume, onUploadNew }: HeroResumeAnalysisPro
             y: phase >= 4 ? 0 : 20
           }}
           transition={{ duration: 0.5 }}
-          className="absolute -bottom-16 left-1/2 -translate-x-1/2 w-full max-w-[280px]"
+          className="absolute -bottom-20 left-1/2 -translate-x-1/2 w-full max-w-[300px]"
         >
-          <div className="bg-card/90 backdrop-blur-md border border-border rounded-xl p-3 shadow-md">
+          <div className="bg-card/90 backdrop-blur-md border border-border rounded-xl p-3 shadow-lg">
             <div className="flex items-center justify-between">
               {["Parsed", "Analyzed", "ATS-Ready"].map((step, i) => (
                 <div key={step} className="flex flex-col items-center">
@@ -330,7 +431,7 @@ const HeroResumeAnalysis = ({ onEditResume, onUploadNew }: HeroResumeAnalysisPro
                 </div>
               ))}
             </div>
-            <div className="flex mt-2.5 gap-1">
+            <div className="flex mt-2 gap-1">
               <motion.div 
                 initial={{ width: 0 }}
                 animate={{ width: "100%" }}
@@ -351,34 +452,32 @@ const HeroResumeAnalysis = ({ onEditResume, onUploadNew }: HeroResumeAnalysisPro
   );
 };
 
-// Fixed A4 Resume Document Renderer
-const ResumeDocument = ({ data, phase }: { data: typeof uploadedResumeData; phase: number }) => {
-  const accentColor = "#3b82f6"; // Professional blue
+// Page 1 Content
+const ResumePageOne = ({ data, phase }: { data: typeof uploadedResumeData.page1; phase: number }) => {
+  const accentColor = "#3b82f6";
 
   return (
-    <div className="w-full h-full p-12 text-gray-900 text-[11pt] leading-[1.45] bg-white">
+    <div className="w-full h-full p-10 text-gray-900 text-[10pt] leading-[1.4] bg-white">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: phase >= 1 ? 1 : 0 }}
         transition={{ duration: 0.5 }}
-        className="text-center pb-5 border-b-2 mb-6"
+        className="text-center pb-4 border-b-2 mb-5"
         style={{ borderColor: accentColor }}
       >
-        <h1 className="text-[28pt] font-bold text-gray-900 mb-2 tracking-tight">
+        <h1 className="text-[24pt] font-bold text-gray-900 mb-1 tracking-tight">
           {data.personalInfo.name.toUpperCase()}
         </h1>
-        <p className="text-[14pt] font-semibold mb-4" style={{ color: accentColor }}>
+        <p className="text-[12pt] font-semibold mb-3" style={{ color: accentColor }}>
           {data.personalInfo.title}
         </p>
-        <div className="flex flex-wrap justify-center gap-4 text-[10pt] text-gray-600">
+        <div className="flex flex-wrap justify-center gap-3 text-[9pt] text-gray-600">
           <span>✉ {data.personalInfo.email}</span>
           <span>•</span>
           <span>☎ {data.personalInfo.phone}</span>
           <span>•</span>
           <span>📍 {data.personalInfo.location}</span>
-          <span>•</span>
-          <span>🔗 {data.personalInfo.website}</span>
         </div>
       </motion.div>
 
@@ -387,25 +486,25 @@ const ResumeDocument = ({ data, phase }: { data: typeof uploadedResumeData; phas
         initial={{ opacity: 0 }}
         animate={{ opacity: phase >= 1 ? 1 : 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
-        className="mb-6"
+        className="mb-4"
       >
         <h2 
-          className="text-[11pt] font-bold uppercase tracking-widest mb-3 pb-1 border-b"
+          className="text-[10pt] font-bold uppercase tracking-widest mb-2 pb-1 border-b"
           style={{ color: accentColor, borderColor: accentColor }}
         >
           Professional Summary
         </h2>
-        <p className="text-[10pt] text-gray-700 leading-relaxed">
+        <p className="text-[9pt] text-gray-700 leading-relaxed">
           {data.summary}
         </p>
-        <div className="flex flex-wrap gap-2 mt-3">
+        <div className="flex flex-wrap gap-1.5 mt-2">
           {data.highlights.map((h, i) => (
             <motion.span
               key={i}
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: phase >= 2 ? 1 : 0, scale: phase >= 2 ? 1 : 0.9 }}
               transition={{ delay: 0.1 * i }}
-              className="px-2 py-0.5 text-[9pt] rounded font-medium"
+              className="px-1.5 py-0.5 text-[8pt] rounded font-medium"
               style={{ 
                 backgroundColor: `${accentColor}15`,
                 color: accentColor
@@ -417,27 +516,27 @@ const ResumeDocument = ({ data, phase }: { data: typeof uploadedResumeData; phas
         </div>
       </motion.section>
 
-      {/* Technical Skills */}
+      {/* Skills */}
       <motion.section
         initial={{ opacity: 0 }}
         animate={{ opacity: phase >= 1 ? 1 : 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
-        className="mb-6"
+        className="mb-4"
       >
         <h2 
-          className="text-[11pt] font-bold uppercase tracking-widest mb-3 pb-1 border-b"
+          className="text-[10pt] font-bold uppercase tracking-widest mb-2 pb-1 border-b"
           style={{ color: accentColor, borderColor: accentColor }}
         >
           Technical Skills
         </h2>
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           {data.skills.map((cat, i) => (
-            <div key={i} className="flex flex-wrap gap-1.5 items-center">
-              <span className="text-[10pt] font-semibold text-gray-700 w-20">{cat.category}:</span>
+            <div key={i} className="flex flex-wrap gap-1 items-center">
+              <span className="text-[9pt] font-semibold text-gray-700 w-16">{cat.category}:</span>
               {cat.items.map((skill, j) => (
                 <span 
                   key={j}
-                  className="px-2 py-0.5 text-[9pt] rounded text-gray-700"
+                  className="px-1.5 py-0.5 text-[8pt] rounded text-gray-700"
                   style={{ backgroundColor: `${accentColor}10` }}
                 >
                   {skill}
@@ -453,31 +552,77 @@ const ResumeDocument = ({ data, phase }: { data: typeof uploadedResumeData; phas
         initial={{ opacity: 0 }}
         animate={{ opacity: phase >= 1 ? 1 : 0 }}
         transition={{ duration: 0.5, delay: 0.3 }}
-        className="mb-6"
+        className="mb-4"
       >
         <h2 
-          className="text-[11pt] font-bold uppercase tracking-widest mb-3 pb-1 border-b"
+          className="text-[10pt] font-bold uppercase tracking-widest mb-2 pb-1 border-b"
           style={{ color: accentColor, borderColor: accentColor }}
         >
           Professional Experience
         </h2>
-        {data.experience.map((exp, idx) => (
-          <div key={exp.id} className="mb-5">
-            <div className="flex justify-between items-baseline mb-1">
-              <h3 className="text-[12pt] font-bold text-gray-900">{exp.position}</h3>
-              <span className="text-[9pt] text-gray-500 font-medium">
-                {exp.startDate} — {exp.endDate}
-              </span>
+        {data.experience.map((exp) => (
+          <div key={exp.id} className="mb-3">
+            <div className="flex justify-between items-baseline">
+              <h3 className="text-[10pt] font-bold text-gray-900">{exp.position}</h3>
+              <span className="text-[8pt] text-gray-500">{exp.startDate} – {exp.endDate}</span>
             </div>
-            <p className="text-[10pt] text-gray-600 font-semibold mb-1">
-              {exp.company} | {exp.location}
-            </p>
-            <p className="text-[9pt] text-gray-500 italic mb-2">{exp.project}</p>
-            <ul className="text-[10pt] text-gray-700 space-y-1">
-              {exp.bullets.slice(0, 4).map((bullet, i) => (
-                <li key={i} className="flex leading-relaxed">
-                  <span className="mr-2 text-gray-400">▸</span>
-                  <span>{bullet}</span>
+            <div className="flex justify-between items-baseline mb-1">
+              <span className="text-[9pt] font-semibold" style={{ color: accentColor }}>{exp.company}</span>
+              <span className="text-[8pt] text-gray-500">{exp.location}</span>
+            </div>
+            {exp.project && (
+              <p className="text-[8pt] text-gray-600 italic mb-1">{exp.project}</p>
+            )}
+            <ul className="space-y-0.5">
+              {exp.bullets.map((bullet, i) => (
+                <li key={i} className="text-[8pt] text-gray-700 pl-3 relative before:content-['•'] before:absolute before:left-0 before:text-gray-400">
+                  {bullet}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </motion.section>
+    </div>
+  );
+};
+
+// Page 2 Content
+const ResumePageTwo = ({ data, phase }: { data: typeof uploadedResumeData.page2; phase: number }) => {
+  const accentColor = "#3b82f6";
+
+  return (
+    <div className="w-full h-full p-10 text-gray-900 text-[10pt] leading-[1.4] bg-white">
+      {/* Continued Experience */}
+      <motion.section
+        initial={{ opacity: 0 }}
+        animate={{ opacity: phase >= 1 ? 1 : 0 }}
+        transition={{ duration: 0.5 }}
+        className="mb-4"
+      >
+        <h2 
+          className="text-[10pt] font-bold uppercase tracking-widest mb-2 pb-1 border-b"
+          style={{ color: accentColor, borderColor: accentColor }}
+        >
+          Professional Experience (Continued)
+        </h2>
+        {data.experience.map((exp) => (
+          <div key={exp.id} className="mb-3">
+            <div className="flex justify-between items-baseline">
+              <h3 className="text-[10pt] font-bold text-gray-900">{exp.position}</h3>
+              <span className="text-[8pt] text-gray-500">{exp.startDate} – {exp.endDate}</span>
+            </div>
+            <div className="flex justify-between items-baseline mb-1">
+              <span className="text-[9pt] font-semibold" style={{ color: accentColor }}>{exp.company}</span>
+              <span className="text-[8pt] text-gray-500">{exp.location}</span>
+            </div>
+            {exp.project && (
+              <p className="text-[8pt] text-gray-600 italic mb-1">{exp.project}</p>
+            )}
+            <ul className="space-y-0.5">
+              {exp.bullets.map((bullet, i) => (
+                <li key={i} className="text-[8pt] text-gray-700 pl-3 relative before:content-['•'] before:absolute before:left-0 before:text-gray-400">
+                  {bullet}
                 </li>
               ))}
             </ul>
@@ -485,46 +630,104 @@ const ResumeDocument = ({ data, phase }: { data: typeof uploadedResumeData; phas
         ))}
       </motion.section>
 
-      {/* Education & Awards Row */}
-      <motion.div
+      {/* Skills */}
+      <motion.section
+        initial={{ opacity: 0 }}
+        animate={{ opacity: phase >= 1 ? 1 : 0 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+        className="mb-4"
+      >
+        <h2 
+          className="text-[10pt] font-bold uppercase tracking-widest mb-2 pb-1 border-b"
+          style={{ color: accentColor, borderColor: accentColor }}
+        >
+          Additional Skills
+        </h2>
+        <div className="space-y-1.5">
+          {data.skills.map((cat, i) => (
+            <div key={i} className="flex flex-wrap gap-1 items-center">
+              <span className="text-[9pt] font-semibold text-gray-700 w-16">{cat.category}:</span>
+              {cat.items.map((skill, j) => (
+                <span 
+                  key={j}
+                  className="px-1.5 py-0.5 text-[8pt] rounded text-gray-700"
+                  style={{ backgroundColor: `${accentColor}10` }}
+                >
+                  {skill}
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
+      </motion.section>
+
+      {/* Education */}
+      <motion.section
+        initial={{ opacity: 0 }}
+        animate={{ opacity: phase >= 1 ? 1 : 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+        className="mb-4"
+      >
+        <h2 
+          className="text-[10pt] font-bold uppercase tracking-widest mb-2 pb-1 border-b"
+          style={{ color: accentColor, borderColor: accentColor }}
+        >
+          Education
+        </h2>
+        {data.education.map((edu, i) => (
+          <div key={i} className="flex justify-between items-baseline">
+            <div>
+              <h3 className="text-[9pt] font-bold text-gray-900">{edu.degree} in {edu.field}</h3>
+              <p className="text-[8pt] text-gray-600">{edu.school}</p>
+            </div>
+            <span className="text-[8pt] text-gray-500">{edu.endDate} • GPA: {edu.gpa}</span>
+          </div>
+        ))}
+      </motion.section>
+
+      {/* Certifications */}
+      <motion.section
+        initial={{ opacity: 0 }}
+        animate={{ opacity: phase >= 1 ? 1 : 0 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+        className="mb-4"
+      >
+        <h2 
+          className="text-[10pt] font-bold uppercase tracking-widest mb-2 pb-1 border-b"
+          style={{ color: accentColor, borderColor: accentColor }}
+        >
+          Certifications
+        </h2>
+        <ul className="space-y-0.5">
+          {data.certifications.map((cert, i) => (
+            <li key={i} className="text-[8pt] text-gray-700 pl-3 relative before:content-['•'] before:absolute before:left-0 before:text-gray-400">
+              {cert}
+            </li>
+          ))}
+        </ul>
+      </motion.section>
+
+      {/* Awards */}
+      <motion.section
         initial={{ opacity: 0 }}
         animate={{ opacity: phase >= 1 ? 1 : 0 }}
         transition={{ duration: 0.5, delay: 0.4 }}
-        className="flex gap-8"
+        className="mb-4"
       >
-        <section className="flex-1">
-          <h2 
-            className="text-[11pt] font-bold uppercase tracking-widest mb-2 pb-1 border-b"
-            style={{ color: accentColor, borderColor: accentColor }}
-          >
-            Education
-          </h2>
-          {data.education.map((edu, i) => (
-            <div key={i}>
-              <h3 className="text-[11pt] font-bold text-gray-900">{edu.school}</h3>
-              <p className="text-[10pt] text-gray-600">{edu.degree} in {edu.field}</p>
-              <p className="text-[9pt] text-gray-500">GPA: {edu.gpa} • {edu.endDate}</p>
-            </div>
+        <h2 
+          className="text-[10pt] font-bold uppercase tracking-widest mb-2 pb-1 border-b"
+          style={{ color: accentColor, borderColor: accentColor }}
+        >
+          Awards & Recognition
+        </h2>
+        <ul className="space-y-0.5">
+          {data.awards.map((award, i) => (
+            <li key={i} className="text-[8pt] text-gray-700 pl-3 relative before:content-['⭐'] before:absolute before:left-0 before:text-amber-500 before:text-[6pt]">
+              {award}
+            </li>
           ))}
-        </section>
-
-        <section className="flex-1">
-          <h2 
-            className="text-[11pt] font-bold uppercase tracking-widest mb-2 pb-1 border-b"
-            style={{ color: accentColor, borderColor: accentColor }}
-          >
-            Awards
-          </h2>
-          <ul className="text-[10pt] text-gray-700 space-y-1">
-            {data.awards.map((award, i) => (
-              <li key={i} className="flex">
-                <span className="mr-2">🏆</span>
-                <span>{award}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      </motion.div>
+        </ul>
+      </motion.section>
     </div>
   );
 };
