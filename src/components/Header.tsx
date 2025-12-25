@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 const Header = () => {
   return (
@@ -9,9 +10,9 @@ const Header = () => {
       transition={{ duration: 0.6, ease: "easeOut" }}
       className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-background/80 border-b border-border/50"
     >
-      <div className="container mx-auto px-6 h-16 flex items-center justify-between">
+      <div className="container mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         {/* Logo */}
-        <div className="flex items-center gap-2">
+        <Link to="/" className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center">
             <svg
               viewBox="0 0 24 24"
@@ -28,18 +29,27 @@ const Header = () => {
             </svg>
           </div>
           <span className="font-semibold text-foreground tracking-tight">CareersCraft</span>
-        </div>
+        </Link>
 
         {/* Navigation */}
         <nav className="hidden md:flex items-center gap-8">
-          <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-300">
+          <a 
+            href="#features" 
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-300"
+          >
             Features
           </a>
-          <a href="#how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-300">
+          <a 
+            href="#how-it-works" 
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-300"
+          >
             How it Works
           </a>
-          <a href="#templates" className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-300">
-            Templates
+          <a 
+            href="#templates" 
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-300"
+          >
+            Industry Templates
           </a>
         </nav>
 
@@ -48,9 +58,11 @@ const Header = () => {
           <Button variant="ghost" size="sm" className="hidden sm:inline-flex">
             Sign In
           </Button>
-          <Button variant="hero" size="sm">
-            Get Started
-          </Button>
+          <Link to="/editor">
+            <Button variant="hero" size="sm">
+              Get Started
+            </Button>
+          </Link>
         </div>
       </div>
     </motion.header>

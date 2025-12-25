@@ -1,7 +1,48 @@
-import { useState, useRef, useEffect, KeyboardEvent } from "react";
+import { useState, useRef, useEffect, KeyboardEvent, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, X, Wand2, Target, Type, Check, Loader2 } from "lucide-react";
 import { useAITextImprovement, AIAction } from "@/hooks/useAITextImprovement";
+
+// Common spelling mistakes and suggestions
+const commonMisspellings: Record<string, string> = {
+  "recieve": "receive",
+  "acheive": "achieve",
+  "managment": "management",
+  "developement": "development",
+  "occured": "occurred",
+  "seperate": "separate",
+  "definately": "definitely",
+  "accomodate": "accommodate",
+  "occurence": "occurrence",
+  "proffesional": "professional",
+  "responsability": "responsibility",
+  "successfull": "successful",
+  "enviroment": "environment",
+  "beleive": "believe",
+  "excercise": "exercise",
+  "refered": "referred",
+  "liason": "liaison",
+  "maintainance": "maintenance",
+  "occassion": "occasion",
+  "priviledge": "privilege",
+};
+
+// Grammar issues patterns
+const grammarPatterns: { pattern: RegExp; suggestion: string; issue: string }[] = [
+  { pattern: /\bi\s/gi, suggestion: "I ", issue: "Capitalize 'I'" },
+  { pattern: /\s{2,}/g, suggestion: " ", issue: "Double space" },
+  { pattern: /\.\s*[a-z]/g, suggestion: "", issue: "Capitalize after period" },
+  { pattern: /\btheir\s+(is|was|are)/gi, suggestion: "there $1", issue: "their vs there" },
+  { pattern: /\byour\s+welcome/gi, suggestion: "you're welcome", issue: "your vs you're" },
+];
+
+interface SpellIssue {
+  word: string;
+  start: number;
+  end: number;
+  suggestion: string;
+  type: "spelling" | "grammar";
+}
 
 interface InlineEditableFieldProps {
   value: string;
@@ -13,6 +54,7 @@ interface InlineEditableFieldProps {
   role?: string;
   multiline?: boolean;
   maxLength?: number;
+  enableSpellCheck?: boolean;
 }
 
 export const InlineEditableField = ({
@@ -25,12 +67,15 @@ export const InlineEditableField = ({
   role = "Professional",
   multiline = false,
   maxLength,
+  enableSpellCheck = true,
 }: InlineEditableFieldProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [localValue, setLocalValue] = useState(value);
   const [showAiMenu, setShowAiMenu] = useState(false);
   const [selectedText, setSelectedText] = useState("");
   const [aiPreview, setAiPreview] = useState<string | null>(null);
+  const [hoveredIssue, setHoveredIssue] = useState<SpellIssue | null>(null);
+  const [issuePosition, setIssuePosition] = useState({ x: 0, y: 0 });
   const editRef = useRef<HTMLDivElement>(null);
 
   const { improveText, isLoading, clearPreview } = useAITextImprovement({
@@ -39,6 +84,31 @@ export const InlineEditableField = ({
       setAiPreview(improvedText);
     },
   });
+
+  // Detect spelling and grammar issues
+  const issues = useMemo(() => {
+    if (!enableSpellCheck || !localValue) return [];
+    
+    const detectedIssues: SpellIssue[] = [];
+    const words = localValue.split(/(\s+)/);
+    let currentIndex = 0;
+
+    words.forEach((word) => {
+      const cleanWord = word.toLowerCase().replace(/[.,!?;:'"]/g, "");
+      if (commonMisspellings[cleanWord]) {
+        detectedIssues.push({
+          word: cleanWord,
+          start: currentIndex,
+          end: currentIndex + word.length,
+          suggestion: commonMisspellings[cleanWord],
+          type: "spelling",
+        });
+      }
+      currentIndex += word.length;
+    });
+
+    return detectedIssues;
+  }, [localValue, enableSpellCheck]);
 
   useEffect(() => {
     setLocalValue(value);
@@ -84,14 +154,11 @@ export const InlineEditableField = ({
       e.preventDefault();
       handleBlur();
     }
-    // Handle Tab for indentation (future feature)
     if (e.key === "Tab") {
       e.preventDefault();
     }
-    // Handle backspace on empty bullet
     if (e.key === "Backspace" && fieldType === "bullet" && !localValue) {
       e.preventDefault();
-      // Could trigger bullet removal here via callback
     }
   };
 
@@ -151,6 +218,67 @@ export const InlineEditableField = ({
     clearPreview();
   };
 
+  const applySpellFix = (issue: SpellIssue) => {
+    const newValue = localValue.slice(0, issue.start) + issue.suggestion + localValue.slice(issue.end);
+    setLocalValue(newValue);
+    onChange(newValue);
+    if (editRef.current) {
+      editRef.current.innerText = newValue;
+    }
+    setHoveredIssue(null);
+  };
+
+  // Render text with underlines for issues
+  const renderTextWithIssues = () => {
+    if (!enableSpellCheck || issues.length === 0 || isEditing) {
+      return localValue || placeholder;
+    }
+
+    const parts: React.ReactNode[] = [];
+    let lastIndex = 0;
+
+    issues.forEach((issue, idx) => {
+      // Add text before the issue
+      if (issue.start > lastIndex) {
+        parts.push(localValue.slice(lastIndex, issue.start));
+      }
+
+      // Add the underlined word
+      const issueWord = localValue.slice(issue.start, issue.end);
+      parts.push(
+        <span
+          key={idx}
+          className={`relative cursor-pointer ${
+            issue.type === "spelling" 
+              ? "underline decoration-wavy decoration-red-400 underline-offset-2" 
+              : "underline decoration-dotted decoration-amber-400 underline-offset-2"
+          }`}
+          onMouseEnter={(e) => {
+            setHoveredIssue(issue);
+            const rect = e.currentTarget.getBoundingClientRect();
+            setIssuePosition({ x: rect.left, y: rect.bottom + 4 });
+          }}
+          onMouseLeave={() => setHoveredIssue(null)}
+          onClick={(e) => {
+            e.stopPropagation();
+            applySpellFix(issue);
+          }}
+        >
+          {issueWord}
+        </span>
+      );
+
+      lastIndex = issue.end;
+    });
+
+    // Add remaining text
+    if (lastIndex < localValue.length) {
+      parts.push(localValue.slice(lastIndex));
+    }
+
+    return parts.length > 0 ? parts : (localValue || placeholder);
+  };
+
   return (
     <div className="relative inline-block w-full" style={style}>
       {/* Editable Content */}
@@ -174,8 +302,41 @@ export const InlineEditableField = ({
         `}
         style={{ minHeight: multiline ? "3em" : "1.2em" }}
       >
-        {isEditing ? localValue : localValue || placeholder}
+        {isEditing ? localValue : renderTextWithIssues()}
       </div>
+
+      {/* Spell/Grammar Suggestion Tooltip */}
+      <AnimatePresence>
+        {hoveredIssue && !isEditing && (
+          <motion.div
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -5 }}
+            className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-xl p-2 text-xs"
+            style={{
+              left: `${issuePosition.x}px`,
+              top: `${issuePosition.y}px`,
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <span className={`w-2 h-2 rounded-full ${hoveredIssue.type === "spelling" ? "bg-red-400" : "bg-amber-400"}`} />
+              <span className="text-gray-600">
+                {hoveredIssue.type === "spelling" ? "Spelling:" : "Grammar:"}
+              </span>
+              <span className="font-medium text-gray-900">{hoveredIssue.suggestion}</span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  applySpellFix(hoveredIssue);
+                }}
+                className="ml-2 px-2 py-0.5 bg-blue-500 text-white rounded text-[10px] hover:bg-blue-600"
+              >
+                Fix
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* AI Preview Banner */}
       <AnimatePresence>
