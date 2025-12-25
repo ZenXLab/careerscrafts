@@ -241,12 +241,22 @@ const Editor = () => {
           onAiImprove={handleAiImprove}
         />
 
-        {/* Live Preview Canvas */}
+        {/* Live Preview Canvas with Inline Editing */}
         <div ref={previewRef} data-resume-preview className="flex-1">
           <LiveResumeCanvas
             template={template}
             data={resumeData}
             designSettings={designSettings}
+            onDataChange={setResumeData}
+            onAiImprove={handleAiImprove}
+            sectionOrder={resumeSections.map(s => s.id).filter(id => id !== 'header')}
+            onSectionOrderChange={(order) => {
+              const newSections = [
+                { id: "header", name: "Header", locked: true, removable: false },
+                ...order.map(id => resumeSections.find(s => s.id === id) || { id, name: id, locked: false, removable: true })
+              ];
+              setResumeSections(newSections);
+            }}
           />
         </div>
 
