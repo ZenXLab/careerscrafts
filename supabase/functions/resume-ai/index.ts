@@ -1,9 +1,25 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { decode as base64Decode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Helper function to decode base64 PDF content to text (basic extraction)
+function extractTextFromBase64(base64Content: string): string {
+  try {
+    const decoded = base64Decode(base64Content);
+    const text = new TextDecoder().decode(decoded);
+    // Basic text extraction - filter out binary content
+    const cleanText = text.replace(/[^\x20-\x7E\n\r]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return cleanText.slice(0, 8000); // Limit to prevent token overflow
+  } catch {
+    return "";
+  }
+}
 
 // CareersCraft AI System Prompt
 const SYSTEM_PROMPT = `You are CareersCraft AI.
@@ -151,6 +167,60 @@ OUTPUT as JSON:
   "recommendations": ["recommendation 1", "recommendation 2"]
 }`;
 
+const PDF_PARSING_PROMPT = `You are a resume parser AI. Extract structured information from the following resume text.
+
+RESUME TEXT:
+{{pdf_text}}
+
+Extract and return ONLY valid JSON in this exact format:
+{
+  "name": "Full Name from resume",
+  "title": "Job Title or Professional Title",
+  "email": "email@example.com",
+  "phone": "phone number",
+  "location": "City, Country",
+  "linkedin": "linkedin URL if present",
+  "website": "website URL if present",
+  "summary": "Professional summary or objective if present",
+  "experience": [
+    {
+      "id": "exp1",
+      "company": "Company Name",
+      "position": "Job Title",
+      "location": "City",
+      "startDate": "Start Date",
+      "endDate": "End Date or Present",
+      "current": true/false,
+      "bullets": ["Achievement or responsibility 1", "Achievement 2"]
+    }
+  ],
+  "education": [
+    {
+      "id": "edu1",
+      "school": "University/School Name",
+      "degree": "Degree Type",
+      "field": "Field of Study",
+      "location": "City",
+      "startDate": "Year",
+      "endDate": "Year"
+    }
+  ],
+  "skills": [
+    {
+      "category": "Technical/Languages/Tools/etc",
+      "items": ["Skill 1", "Skill 2"]
+    }
+  ],
+  "certifications": [
+    {"id": "cert1", "name": "Certification Name", "issuer": "Issuing Organization", "date": "Year"}
+  ],
+  "languages": [
+    {"language": "Language", "proficiency": "Proficiency Level"}
+  ]
+}
+
+Extract as much information as possible. Use reasonable defaults for missing data.`;
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -199,6 +269,15 @@ Return improved content in the same format. Focus on:
 - Quantifiable achievements
 - ATS-friendly keywords
 - Professional tone`;
+        break;
+        
+      case "parse-pdf":
+        // For PDF parsing, we use the text extracted from PDF
+        const pdfText = data.pdfText || extractTextFromBase64(data.pdfContent || "") || "";
+        prompt = PDF_PARSING_PROMPT.replace("{{pdf_text}}", pdfText);
+        systemPrompt = "You are a resume parser AI. Extract structured data from resume text. Output ONLY valid JSON.";
+        break;
+        systemPrompt = "You are a resume parser AI. Extract structured data from resume text. Output ONLY valid JSON.";
         break;
         
       default:

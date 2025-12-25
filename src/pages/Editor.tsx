@@ -13,6 +13,8 @@ import ContextualPanel from "@/components/editor/ContextualPanel";
 import AddSectionModal from "@/components/editor/AddSectionModal";
 import RearrangeSectionsModal from "@/components/editor/RearrangeSectionsModal";
 import AIGenerationModal from "@/components/editor/AIGenerationModal";
+import DesignPanel, { DesignSettings } from "@/components/editor/DesignPanel";
+import PDFUploadModal from "@/components/editor/PDFUploadModal";
 import { exportToPDF } from "@/utils/pdfExport";
 import TemplatePreview from "@/components/TemplatePreview";
 import { 
@@ -41,7 +43,19 @@ const Editor = () => {
   const [showAddSection, setShowAddSection] = useState(false);
   const [showRearrange, setShowRearrange] = useState(false);
   const [showAiGenerate, setShowAiGenerate] = useState(false);
+  const [showDesignPanel, setShowDesignPanel] = useState(false);
+  const [showPdfUpload, setShowPdfUpload] = useState(false);
   const [contextualPanelMode, setContextualPanelMode] = useState<"ai-suggestions" | "jd-mapping" | "ats-warnings" | null>(null);
+  
+  // Design settings
+  const [designSettings, setDesignSettings] = useState<DesignSettings>({
+    fontFamily: "'Inter', sans-serif",
+    fontSize: 100,
+    lineSpacing: 1.4,
+    sectionSpacing: 20,
+    accentColor: "hsl(221, 83%, 53%)",
+    layout: "single-column",
+  });
 
   // Sections for navigation
   const sections = [
@@ -186,7 +200,7 @@ const Editor = () => {
           onAddSection={() => setShowAddSection(true)}
           onRearrange={() => setShowRearrange(true)}
           onTemplates={() => navigate("/templates")}
-          onDesign={() => toast({ title: "Design Panel", description: "Coming soon..." })}
+          onDesign={() => setShowDesignPanel(true)}
           onImproveText={() => setContextualPanelMode("ai-suggestions")}
           onAtsCheck={() => setContextualPanelMode("ats-warnings")}
           onJdMapping={() => setContextualPanelMode("jd-mapping")}
@@ -195,6 +209,7 @@ const Editor = () => {
           onHistory={() => toast({ title: "History", description: "Version history coming soon..." })}
           onAiGenerate={() => setShowAiGenerate(true)}
           onExportPDF={handleExportPDF}
+          onPdfUpload={() => setShowPdfUpload(true)}
           atsScore={atsScore}
         />
 
@@ -264,6 +279,22 @@ const Editor = () => {
         isOpen={showAiGenerate}
         onClose={() => setShowAiGenerate(false)}
         onGenerate={handleAiGenerate}
+      />
+
+      <DesignPanel
+        isOpen={showDesignPanel}
+        onClose={() => setShowDesignPanel(false)}
+        settings={designSettings}
+        onSettingsChange={setDesignSettings}
+      />
+
+      <PDFUploadModal
+        isOpen={showPdfUpload}
+        onClose={() => setShowPdfUpload(false)}
+        onExtracted={(data) => {
+          setResumeData(data);
+          toast({ title: "Resume imported!", description: "Edit your imported resume." });
+        }}
       />
     </div>
   );
