@@ -2,95 +2,107 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* CareersCraft Design System
+   Premium, Recruiter-Trusted, Enterprise-Grade
+   All colors in HSL
 */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Core Brand Colors */
+    --carbon-black: 240 10% 5%;
+    --obsidian-gray: 240 12% 10%;
+    --pearl-white: 240 10% 97%;
+    --soft-gray: 240 5% 65%;
+    
+    /* Accent Colors */
+    --royal-indigo: 243 75% 59%;
+    --royal-indigo-soft: 243 75% 70%;
+    --emerald-slate: 170 75% 26%;
+    --graphite-gold: 47 35% 59%;
+    
+    /* Semantic Tokens */
+    --background: var(--carbon-black);
+    --foreground: var(--pearl-white);
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: var(--obsidian-gray);
+    --card-foreground: var(--pearl-white);
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: var(--obsidian-gray);
+    --popover-foreground: var(--pearl-white);
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: var(--royal-indigo);
+    --primary-foreground: var(--pearl-white);
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 240 8% 15%;
+    --secondary-foreground: var(--pearl-white);
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 240 8% 18%;
+    --muted-foreground: var(--soft-gray);
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: var(--royal-indigo);
+    --accent-foreground: var(--pearl-white);
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: var(--pearl-white);
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 240 8% 18%;
+    --input: 240 8% 18%;
+    --ring: var(--royal-indigo);
 
     --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Typography */
+    --font-sans: 'Inter', system-ui, sans-serif;
+    --font-serif: 'Playfair Display', Georgia, serif;
+    
+    /* Shadows */
+    --shadow-subtle: 0 4px 20px -4px hsl(240 10% 0% / 0.5);
+    --shadow-elevated: 0 8px 40px -8px hsl(240 10% 0% / 0.6);
+    --shadow-glow: 0 0 60px -12px hsl(var(--royal-indigo) / 0.3);
+    
+    /* Document Shadows */
+    --shadow-paper: 0 25px 50px -12px hsl(240 10% 0% / 0.7), 
+                    0 12px 25px -8px hsl(240 10% 0% / 0.5);
+    
+    /* Transitions */
+    --transition-smooth: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: all 0.8s cubic-bezier(0.25, 0.1, 0.25, 1);
+    
+    /* Sidebar (keeping defaults) */
+    --sidebar-background: var(--obsidian-gray);
+    --sidebar-foreground: var(--pearl-white);
+    --sidebar-primary: var(--royal-indigo);
+    --sidebar-primary-foreground: var(--pearl-white);
+    --sidebar-accent: 240 8% 15%;
+    --sidebar-accent-foreground: var(--pearl-white);
+    --sidebar-border: 240 8% 18%;
+    --sidebar-ring: var(--royal-indigo);
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Same as root - CareersCraft is dark-first */
+    --background: var(--carbon-black);
+    --foreground: var(--pearl-white);
+    --card: var(--obsidian-gray);
+    --card-foreground: var(--pearl-white);
+    --popover: var(--obsidian-gray);
+    --popover-foreground: var(--pearl-white);
+    --primary: var(--royal-indigo);
+    --primary-foreground: var(--pearl-white);
+    --secondary: 240 8% 15%;
+    --secondary-foreground: var(--pearl-white);
+    --muted: 240 8% 18%;
+    --muted-foreground: var(--soft-gray);
+    --accent: var(--royal-indigo);
+    --accent-foreground: var(--pearl-white);
+    --destructive: 0 62% 50%;
+    --destructive-foreground: var(--pearl-white);
+    --border: 240 8% 18%;
+    --input: 240 8% 18%;
+    --ring: var(--royal-indigo);
   }
 }
 
@@ -99,7 +111,110 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+  
+  /* Typography Utilities */
+  .font-serif {
+    font-family: var(--font-serif);
+  }
+  
+  .font-sans {
+    font-family: var(--font-sans);
+  }
+}
+
+@layer components {
+  /* Hero Text Styles */
+  .hero-headline {
+    @apply text-5xl md:text-6xl lg:text-7xl font-light tracking-tight leading-tight;
+  }
+  
+  .hero-subheadline {
+    @apply text-lg md:text-xl text-muted-foreground font-light max-w-xl;
+  }
+  
+  /* Document/Resume Card */
+  .resume-card {
+    @apply bg-pearl rounded-sm;
+    box-shadow: var(--shadow-paper);
+    aspect-ratio: 210 / 297; /* A4 ratio */
+  }
+  
+  /* Subtle Glow Effect */
+  .glow-subtle {
+    box-shadow: var(--shadow-glow);
+  }
+  
+  /* Section Spacing */
+  .section-spacing {
+    @apply py-24 md:py-32 lg:py-40;
+  }
+  
+  /* Trust Badge */
+  .trust-badge {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-full 
+           bg-secondary/50 border border-border/50 
+           text-sm text-muted-foreground backdrop-blur-sm;
+  }
+  
+  /* Feature Card */
+  .feature-card {
+    @apply p-8 rounded-lg bg-card border border-border/50 
+           transition-all duration-500 hover:border-primary/30 hover:bg-secondary/50;
+  }
+  
+  /* Animated Underline */
+  .link-underline {
+    @apply relative inline-block;
+  }
+  
+  .link-underline::after {
+    @apply absolute bottom-0 left-0 w-full h-px bg-primary 
+           origin-bottom-right transition-transform duration-300 scale-x-0;
+    content: '';
+  }
+  
+  .link-underline:hover::after {
+    @apply origin-bottom-left scale-x-100;
+  }
+}
+
+@layer utilities {
+  /* Text Gradient */
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(var(--pearl-white)) 0%, hsl(var(--soft-gray)) 100%);
+  }
+  
+  /* Fade Mask for Scroll */
+  .fade-mask-bottom {
+    mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+  }
+  
+  /* Animation Delays */
+  .animation-delay-150 {
+    animation-delay: 150ms;
+  }
+  
+  .animation-delay-300 {
+    animation-delay: 300ms;
+  }
+  
+  .animation-delay-500 {
+    animation-delay: 500ms;
+  }
+  
+  .animation-delay-700 {
+    animation-delay: 700ms;
+  }
+  
+  .animation-delay-1000 {
+    animation-delay: 1000ms;
   }
 }
