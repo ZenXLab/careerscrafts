@@ -37,6 +37,7 @@ import LiveATSWidget from "./LiveATSWidget";
 // A4 dimensions in pixels at 96 DPI
 const A4_WIDTH = 794;
 const A4_HEIGHT = 1123;
+const A4_PADDING = 28;
 
 // Section titles
 const SECTION_TITLES: Record<string, string> = {
@@ -241,9 +242,11 @@ const InlineSlateCanvas = ({
   } = useResumeCanvasStore();
   
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [sectionOrder, setSectionOrder] = useState<string[]>(
     externalSectionOrder || ["summary", "experience", "skills", "education"]
   );
+  const resumeContentRef = useRef<HTMLDivElement>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -256,7 +259,7 @@ const InlineSlateCanvas = ({
     }
   }, [externalSectionOrder]);
 
-  // Calculate optimal zoom
+  // Calculate optimal zoom and page count
   useEffect(() => {
     const calculateZoom = () => {
       if (containerRef.current) {
@@ -267,10 +270,31 @@ const InlineSlateCanvas = ({
         setZoom(Math.max(0.4, Math.min(Math.min(fitWidth, fitHeight), 0.85)));
       }
     };
+    
+    const calculatePages = () => {
+      if (resumeContentRef.current) {
+        const contentHeight = resumeContentRef.current.scrollHeight;
+        const pages = Math.max(1, Math.ceil(contentHeight / (A4_HEIGHT - A4_PADDING * 2)));
+        setTotalPages(pages);
+      }
+    };
+    
     calculateZoom();
+    calculatePages();
+    
     window.addEventListener("resize", calculateZoom);
-    return () => window.removeEventListener("resize", calculateZoom);
-  }, [setZoom]);
+    
+    // Recalculate pages when data changes
+    const observer = new ResizeObserver(calculatePages);
+    if (resumeContentRef.current) {
+      observer.observe(resumeContentRef.current);
+    }
+    
+    return () => {
+      window.removeEventListener("resize", calculateZoom);
+      observer.disconnect();
+    };
+  }, [setZoom, data, sectionOrder]);
 
   // Handle section drag end
   const handleSectionDragEnd = (event: DragEndEvent) => {
@@ -444,14 +468,14 @@ const InlineSlateCanvas = ({
             <ChevronLeft className="w-4 h-4" />
           </Button>
           <span className="text-xs text-muted-foreground font-medium">
-            Page {currentPage} of {template.pages}
+            Page {currentPage} of {totalPages}
           </span>
           <Button
             variant="ghost"
             size="icon"
             className="h-8 w-8"
-            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, template.pages))}
-            disabled={currentPage === template.pages}
+            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
           >
             <ChevronRight className="w-4 h-4" />
           </Button>
@@ -533,6 +557,7 @@ const InlineSlateCanvas = ({
                 }}
               >
                 <div
+                  ref={resumeContentRef}
                   className="resume-canvas"
                   style={{
                     padding: "28px 32px",
