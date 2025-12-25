@@ -1,12 +1,9 @@
-import { useCallback, useMemo, useState, useEffect, useRef } from "react";
-import { createEditor, Descendant, Editor, Transforms, Range, Node, Element as SlateElement } from "slate";
-import { Slate, Editable, withReact, ReactEditor } from "slate-react";
-import { withHistory } from "slate-history";
-import { motion } from "framer-motion";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Maximize2,
   GripVertical, Camera, Eye, EyeOff, Upload, Trash2,
-  Download, FileText, FileSpreadsheet
+  Download, FileText, FileSpreadsheet, Plus
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,15 +14,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ResumeData, TemplateConfig } from "@/types/resume";
 import { DesignSettings } from "../DesignPanel";
-import SlateFloatingToolbar from "../slate/SlateFloatingToolbar";
-import { BULLET_STYLES, BulletStyle } from "@/types/slate";
-import {
-  resumeDataToSlateValue,
-  slateValueToResumeData,
-  toggleMark,
-  insertBullet,
-  deleteEmptyBullet,
-} from "../slate/slateUtils";
 import {
   DndContext,
   closestCenter,
@@ -42,6 +30,9 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useResumeCanvasStore } from "@/stores/resumeCanvasStore";
+import InlineEditableField from "./InlineEditableField";
+import DraggableExperienceEntry from "./DraggableExperienceEntry";
+import LiveATSWidget from "./LiveATSWidget";
 
 // A4 dimensions in pixels at 96 DPI
 const A4_WIDTH = 794;
@@ -77,9 +68,15 @@ interface InlineSlateCanvasProps {
   sectionOrder?: string[];
   onSectionOrderChange?: (order: string[]) => void;
   onExportPDF?: () => void;
+  atsScore?: number;
+  atsAnimatedScore?: number;
+  atsBreakdown?: any;
+  atsFeedback?: any;
+  atsSectionSignals?: any[];
+  atsIsHighScore?: boolean;
 }
 
-// Draggable Section Wrapper (outside Slate for drag handles)
+// Draggable Section Wrapper
 interface DraggableSectionProps {
   id: string;
   children: React.ReactNode;
@@ -112,7 +109,6 @@ const DraggableSection = ({ id, children, readOnly, isActive, onActivate }: Drag
       className={`group relative ${isActive ? 'ring-2 ring-primary/30 rounded' : ''}`}
       onClick={onActivate}
     >
-      {/* Drag Handle - outside editable area */}
       {!readOnly && (
         <button
           {...attributes}
@@ -173,7 +169,7 @@ const PhotoControls = ({
   }
 
   return (
-    <div className="photo-controls-wrapper group/photo relative" contentEditable={false}>
+    <div className="photo-controls-wrapper group/photo relative">
       {showPhoto && photo ? (
         <div className="relative">
           <img
@@ -227,11 +223,16 @@ const InlineSlateCanvas = ({
   sectionOrder: externalSectionOrder,
   onSectionOrderChange,
   onExportPDF,
+  atsScore = 0,
+  atsAnimatedScore = 0,
+  atsBreakdown = { structure: 0, keywords: 0, content: 0, readability: 0, completeness: 0 },
+  atsFeedback = null,
+  atsSectionSignals = [],
+  atsIsHighScore = false,
 }: InlineSlateCanvasProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // Zustand store for layout state
   const { 
     zoom, setZoom, 
     showPhoto, setShowPhoto, 
@@ -244,19 +245,8 @@ const InlineSlateCanvas = ({
     externalSectionOrder || ["summary", "experience", "skills", "education"]
   );
 
-  // Create Slate editor with plugins
-  const editor = useMemo(() => withHistory(withReact(createEditor())), []);
-
-  // Initialize Slate value from resume data
-  const [slateValue, setSlateValue] = useState<Descendant[]>(() =>
-    resumeDataToSlateValue(data)
-  );
-
-  // DnD sensors
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 5 },
-    })
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
   // Sync external section order
@@ -265,14 +255,6 @@ const InlineSlateCanvas = ({
       setSectionOrder(externalSectionOrder);
     }
   }, [externalSectionOrder]);
-
-  // Sync Slate value when data changes significantly
-  useEffect(() => {
-    const newValue = resumeDataToSlateValue(data);
-    setSlateValue(newValue);
-    editor.children = newValue;
-    editor.onChange();
-  }, [data.personalInfo.name]);
 
   // Calculate optimal zoom
   useEffect(() => {
@@ -289,375 +271,6 @@ const InlineSlateCanvas = ({
     window.addEventListener("resize", calculateZoom);
     return () => window.removeEventListener("resize", calculateZoom);
   }, [setZoom]);
-
-  // Handle Slate value changes
-  const handleSlateChange = useCallback(
-    (newValue: Descendant[]) => {
-      setSlateValue(newValue);
-
-      // Check if content actually changed (not just selection)
-      const isContentChange = editor.operations.some(
-        (op) => op.type !== "set_selection"
-      );
-
-      if (isContentChange && onDataChange) {
-        const updatedData = slateValueToResumeData(newValue, data);
-        onDataChange(updatedData);
-      }
-    },
-    [data, onDataChange, editor]
-  );
-
-  // Render Slate element
-  const renderElement = useCallback(
-    (props: any) => {
-      const { attributes, children, element } = props;
-      const accentColor = designSettings?.accentColor || template.accentColor || "#2563eb";
-
-      const baseTextStyle: React.CSSProperties = {
-        direction: "ltr",
-        textAlign: "left",
-        unicodeBidi: "embed",
-      };
-
-      switch (element.type) {
-        case "header":
-          return (
-            <h1
-              {...attributes}
-              style={{
-                ...baseTextStyle,
-                fontSize: "22px",
-                fontWeight: 700,
-                color: "#111827",
-                marginBottom: "2px",
-                letterSpacing: "0.02em",
-              }}
-            >
-              {children}
-            </h1>
-          );
-
-        case "section-title":
-          return (
-            <h2
-              {...attributes}
-              style={{
-                ...baseTextStyle,
-                fontSize: "11px",
-                fontWeight: 700,
-                color: accentColor,
-                borderBottom: `1px solid ${accentColor}`,
-                paddingBottom: "4px",
-                marginBottom: "8px",
-                letterSpacing: "0.05em",
-                textTransform: "uppercase",
-              }}
-            >
-              {children}
-            </h2>
-          );
-
-        case "paragraph":
-          return (
-            <p
-              {...attributes}
-              style={{
-                ...baseTextStyle,
-                fontSize: "10px",
-                lineHeight: 1.5,
-                color: "#374151",
-                marginBottom: "8px",
-              }}
-            >
-              {children}
-            </p>
-          );
-
-        case "bullet-list":
-          return (
-            <ul
-              {...attributes}
-              style={{
-                ...baseTextStyle,
-                listStyle: "none",
-                padding: 0,
-                margin: "6px 0 0 0",
-              }}
-            >
-              {children}
-            </ul>
-          );
-
-        case "bullet":
-          const bulletStyle = (element as any).style || "dot";
-          const bulletChar = BULLET_STYLES[bulletStyle as BulletStyle] || "▸";
-          return (
-            <li
-              {...attributes}
-              style={{
-                ...baseTextStyle,
-                fontSize: "9px",
-                lineHeight: 1.4,
-                color: "#374151",
-                display: "flex",
-                alignItems: "flex-start",
-                gap: "8px",
-                marginBottom: "3px",
-              }}
-            >
-              <span
-                contentEditable={false}
-                style={{
-                  color: accentColor,
-                  flexShrink: 0,
-                  userSelect: "none",
-                }}
-              >
-                {bulletChar}
-              </span>
-              <span style={{ flex: 1 }}>{children}</span>
-            </li>
-          );
-
-        case "experience-entry":
-          return (
-            <div
-              {...attributes}
-              style={{
-                ...baseTextStyle,
-                marginBottom: "14px",
-              }}
-            >
-              {children}
-            </div>
-          );
-
-        case "experience-role":
-          return (
-            <div
-              {...attributes}
-              style={{
-                ...baseTextStyle,
-                fontWeight: 700,
-                fontSize: "11px",
-                color: "#111827",
-              }}
-            >
-              {children}
-            </div>
-          );
-
-        case "experience-company":
-          return (
-            <div
-              {...attributes}
-              style={{
-                ...baseTextStyle,
-                fontWeight: 600,
-                fontSize: "10px",
-                color: accentColor,
-              }}
-            >
-              {children}
-            </div>
-          );
-
-        case "experience-date":
-          return (
-            <span
-              {...attributes}
-              style={{
-                ...baseTextStyle,
-                fontSize: "9px",
-                color: "#6B7280",
-                fontWeight: 500,
-              }}
-            >
-              {children}
-            </span>
-          );
-
-        case "experience-location":
-          return (
-            <span
-              {...attributes}
-              style={{
-                ...baseTextStyle,
-                fontSize: "9px",
-                color: "#6B7280",
-              }}
-            >
-              {children}
-            </span>
-          );
-
-        case "skill-group":
-          return (
-            <div
-              {...attributes}
-              style={{
-                ...baseTextStyle,
-                marginBottom: "6px",
-                fontSize: "9px",
-              }}
-            >
-              <span
-                contentEditable={false}
-                style={{
-                  fontWeight: 600,
-                  color: "#374151",
-                }}
-              >
-                {typeof (element as any).title === "string"
-                  ? (element as any).title
-                  : ""}: 
-              </span>
-              <span>{children}</span>
-            </div>
-          );
-
-        case "skill-item":
-          return (
-            <span
-              {...attributes}
-              style={{
-                ...baseTextStyle,
-                color: "#374151",
-              }}
-            >
-              {children}
-            </span>
-          );
-
-        case "education-entry":
-          return (
-            <div
-              {...attributes}
-              style={{
-                ...baseTextStyle,
-                fontSize: "10px",
-                color: "#374151",
-                marginBottom: "10px",
-              }}
-            >
-              {children}
-            </div>
-          );
-
-        case "section":
-          return (
-            <section
-              {...attributes}
-              style={{
-                ...baseTextStyle,
-                marginBottom: "16px",
-              }}
-              data-section-type={(element as any).sectionType}
-            >
-              {children}
-            </section>
-          );
-
-        default:
-          return (
-            <p {...attributes} style={baseTextStyle}>
-              {children}
-            </p>
-          );
-      }
-    },
-    [designSettings?.accentColor, template.accentColor]
-  );
-
-  // Render Slate leaf (text formatting)
-  const renderLeaf = useCallback(
-    (props: any) => {
-      const { attributes, children, leaf } = props;
-      const accentColor = designSettings?.accentColor || template.accentColor || "#2563eb";
-      let styledChildren = children;
-
-      if (leaf.bold) {
-        styledChildren = <strong>{styledChildren}</strong>;
-      }
-      if (leaf.italic) {
-        styledChildren = <em>{styledChildren}</em>;
-      }
-      if (leaf.accent) {
-        styledChildren = <span style={{ color: accentColor }}>{styledChildren}</span>;
-      }
-      if (leaf.muted) {
-        styledChildren = <span className="text-gray-500">{styledChildren}</span>;
-      }
-
-      return (
-        <span
-          {...attributes}
-          style={{
-            direction: "ltr",
-            textAlign: "left",
-            unicodeBidi: "embed",
-          }}
-        >
-          {styledChildren}
-        </span>
-      );
-    },
-    [designSettings?.accentColor, template.accentColor]
-  );
-
-  // Handle keyboard shortcuts
-  const handleKeyDown = useCallback(
-    (event: React.KeyboardEvent) => {
-      // Bold: Ctrl/Cmd + B
-      if ((event.ctrlKey || event.metaKey) && event.key === "b") {
-        event.preventDefault();
-        toggleMark(editor, "bold");
-        return;
-      }
-
-      // Italic: Ctrl/Cmd + I
-      if ((event.ctrlKey || event.metaKey) && event.key === "i") {
-        event.preventDefault();
-        toggleMark(editor, "italic");
-        return;
-      }
-
-      // Enter in bullet list - create new bullet
-      if (event.key === "Enter") {
-        const { selection } = editor;
-        if (!selection || !Range.isCollapsed(selection)) return;
-
-        const [bulletMatch] = Array.from(
-          Editor.nodes(editor, {
-            match: (n: any) => n.type === "bullet",
-          })
-        );
-
-        if (bulletMatch) {
-          event.preventDefault();
-          insertBullet(editor, "dot");
-          return;
-        }
-      }
-
-      // Backspace on empty bullet - delete bullet
-      if (event.key === "Backspace") {
-        const deleted = deleteEmptyBullet(editor);
-        if (deleted) {
-          event.preventDefault();
-          return;
-        }
-      }
-
-      // Tab - prevent
-      if (event.key === "Tab") {
-        event.preventDefault();
-        return;
-      }
-    },
-    [editor]
-  );
 
   // Handle section drag end
   const handleSectionDragEnd = (event: DragEndEvent) => {
@@ -681,26 +294,80 @@ const InlineSlateCanvas = ({
     onSectionOrderChange?.(newOrder);
   };
 
-  // Photo handlers
-  const handleTogglePhoto = () => setShowPhoto(!showPhoto);
+  // Handle experience entry drag end
+  const handleExperienceDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id || !onDataChange) return;
 
-  const handleUploadPhoto = () => {
-    fileInputRef.current?.click();
+    const oldIndex = data.experience.findIndex(e => e.id === active.id);
+    const newIndex = data.experience.findIndex(e => e.id === over.id);
+
+    if (oldIndex !== -1 && newIndex !== -1) {
+      const newExperience = arrayMove(data.experience, oldIndex, newIndex);
+      onDataChange({ ...data, experience: newExperience });
+    }
   };
 
+  // Handle data field changes
+  const handleFieldChange = useCallback((path: string, value: any) => {
+    if (!onDataChange) return;
+    
+    const newData = { ...data };
+    const keys = path.split(".");
+    let current: any = newData;
+    
+    for (let i = 0; i < keys.length - 1; i++) {
+      current = current[keys[i]];
+    }
+    current[keys[keys.length - 1]] = value;
+    
+    onDataChange(newData);
+  }, [data, onDataChange]);
+
+  // Handle experience entry change
+  const handleExperienceChange = useCallback((index: number, entry: any) => {
+    if (!onDataChange) return;
+    const newExperience = [...data.experience];
+    newExperience[index] = entry;
+    onDataChange({ ...data, experience: newExperience });
+  }, [data, onDataChange]);
+
+  // Handle experience entry delete
+  const handleExperienceDelete = useCallback((index: number) => {
+    if (!onDataChange || data.experience.length <= 1) return;
+    const newExperience = data.experience.filter((_, i) => i !== index);
+    onDataChange({ ...data, experience: newExperience });
+  }, [data, onDataChange]);
+
+  // Add new experience entry
+  const handleAddExperience = useCallback(() => {
+    if (!onDataChange) return;
+    const newEntry = {
+      id: `exp-${Date.now()}`,
+      company: "Company Name",
+      position: "Job Title",
+      location: "Location",
+      startDate: "Jan 2024",
+      endDate: "Present",
+      current: true,
+      bullets: ["Add your key achievement or responsibility here"],
+    };
+    onDataChange({ ...data, experience: [...data.experience, newEntry] });
+  }, [data, onDataChange]);
+
+  // Photo handlers
+  const handleTogglePhoto = () => setShowPhoto(!showPhoto);
+  const handleUploadPhoto = () => fileInputRef.current?.click();
+  
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && onDataChange) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        const newData = {
+        onDataChange({
           ...data,
-          personalInfo: {
-            ...data.personalInfo,
-            photo: reader.result as string
-          }
-        };
-        onDataChange(newData);
+          personalInfo: { ...data.personalInfo, photo: reader.result as string }
+        });
         setShowPhoto(true);
       };
       reader.readAsDataURL(file);
@@ -709,14 +376,10 @@ const InlineSlateCanvas = ({
 
   const handleRemovePhoto = () => {
     if (onDataChange) {
-      const newData = {
+      onDataChange({
         ...data,
-        personalInfo: {
-          ...data.personalInfo,
-          photo: undefined
-        }
-      };
-      onDataChange(newData);
+        personalInfo: { ...data.personalInfo, photo: undefined }
+      });
       setShowPhoto(false);
     }
   };
@@ -733,6 +396,7 @@ const InlineSlateCanvas = ({
 
   const accentColor = settings.accentColor || template.accentColor || "#2563eb";
   const shouldShowPhotoArea = !readOnly || (showPhoto && data.personalInfo.photo);
+  const isEditable = !readOnly && !isPreviewMode;
 
   // Zoom controls
   const handleZoomIn = () => setZoom(zoom + 0.1);
@@ -745,11 +409,6 @@ const InlineSlateCanvas = ({
       const fitHeight = containerHeight / A4_HEIGHT;
       setZoom(Math.min(fitWidth, fitHeight, 1));
     }
-  };
-
-  // Download handlers
-  const handleDownloadPDF = () => {
-    onExportPDF?.();
   };
 
   return (
@@ -818,7 +477,7 @@ const InlineSlateCanvas = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={handleDownloadPDF}>
+              <DropdownMenuItem onClick={onExportPDF}>
                 <FileText className="w-4 h-4 mr-2" />
                 Download as PDF
               </DropdownMenuItem>
@@ -832,297 +491,487 @@ const InlineSlateCanvas = ({
         </div>
       </div>
 
-      {/* Canvas Area */}
-      <div
-        ref={containerRef}
-        className="flex-1 overflow-auto flex justify-center items-start p-6 lg:p-8"
-        style={{
-          background: `
-            radial-gradient(circle at 50% 0%, hsl(var(--primary) / 0.03) 0%, transparent 50%),
-            linear-gradient(180deg, hsl(var(--muted) / 0.3) 0%, hsl(var(--background)) 100%)
-          `,
-        }}
-      >
+      {/* Main Canvas Area */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Canvas */}
         <div
+          ref={containerRef}
+          className="flex-1 overflow-auto flex justify-center items-start p-6 lg:p-8"
           style={{
-            transform: `scale(${zoom})`,
-            transformOrigin: "top center",
-            transition: "transform 0.2s ease-out",
+            background: `
+              radial-gradient(circle at 50% 0%, hsl(var(--primary) / 0.03) 0%, transparent 50%),
+              linear-gradient(180deg, hsl(var(--muted) / 0.3) 0%, hsl(var(--background)) 100%)
+            `,
           }}
         >
-          <motion.div
-            className="relative"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
+          <div
+            style={{
+              transform: `scale(${zoom})`,
+              transformOrigin: "top center",
+              transition: "transform 0.2s ease-out",
+            }}
           >
-            {/* Resume Shell */}
-            <div
-              className="resume-shell relative rounded-sm overflow-hidden"
-              style={{
-                width: `${A4_WIDTH}px`,
-                minHeight: `${A4_HEIGHT}px`,
-                background: "white",
-                boxShadow: `
-                  0 25px 50px -12px rgba(0, 0, 0, 0.2),
-                  0 12px 25px -8px rgba(0, 0, 0, 0.1),
-                  0 0 0 1px rgba(0, 0, 0, 0.05)
-                `,
-              }}
+            <motion.div
+              className="relative"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              data-resume-preview
             >
+              {/* Resume Shell */}
               <div
-                className="resume-canvas"
+                className="resume-shell relative rounded-sm overflow-hidden"
                 style={{
-                  padding: "28px 32px",
-                  fontFamily: settings.fontFamily,
-                  lineHeight: settings.lineSpacing,
-                  minHeight: `${A4_HEIGHT - 56}px`,
+                  width: `${A4_WIDTH}px`,
+                  minHeight: `${A4_HEIGHT}px`,
+                  background: "white",
+                  boxShadow: `
+                    0 25px 50px -12px rgba(0, 0, 0, 0.2),
+                    0 12px 25px -8px rgba(0, 0, 0, 0.1),
+                    0 0 0 1px rgba(0, 0, 0, 0.05)
+                  `,
                 }}
               >
-                {/* Header */}
-                <header
+                <div
+                  className="resume-canvas"
                   style={{
-                    display: "grid",
-                    gridTemplateColumns: shouldShowPhotoArea && showPhoto && data.personalInfo.photo
-                      ? "auto 1fr"
-                      : shouldShowPhotoArea && !readOnly
-                        ? "auto 1fr"
-                        : "1fr",
-                    gap: shouldShowPhotoArea ? "16px" : "0",
-                    alignItems: "center",
-                    marginBottom: "16px",
-                    paddingBottom: "12px",
-                    borderBottom: `2px solid ${accentColor}`,
+                    padding: "28px 32px",
+                    fontFamily: settings.fontFamily,
+                    lineHeight: settings.lineSpacing,
+                    minHeight: `${A4_HEIGHT - 56}px`,
                   }}
                 >
-                  {/* Photo Controls */}
-                  {!readOnly && !isPreviewMode && (
-                    <PhotoControls
-                      photo={data.personalInfo.photo}
-                      showPhoto={showPhoto}
-                      onTogglePhoto={handleTogglePhoto}
-                      onUploadPhoto={handleUploadPhoto}
-                      onRemovePhoto={handleRemovePhoto}
-                      accentColor={accentColor}
-                    />
-                  )}
-                  {(readOnly || isPreviewMode) && showPhoto && data.personalInfo.photo && (
-                    <img
-                      src={data.personalInfo.photo}
-                      alt="Profile"
-                      style={{
-                        width: "72px",
-                        height: "72px",
-                        borderRadius: "50%",
-                        objectFit: "cover",
-                        border: `2px solid ${accentColor}`,
-                      }}
-                    />
-                  )}
-
-                  {/* Header Content - Inline Editable */}
-                  <div style={{ textAlign: shouldShowPhotoArea && (showPhoto && data.personalInfo.photo || !readOnly) ? "left" : "center" }}>
-                    <Slate editor={editor} initialValue={slateValue} onChange={handleSlateChange}>
-                      {!readOnly && !isPreviewMode && <SlateFloatingToolbar accentColor={accentColor} />}
-                      <Editable
-                        renderElement={renderElement}
-                        renderLeaf={renderLeaf}
-                        onKeyDown={handleKeyDown}
-                        readOnly={readOnly || isPreviewMode}
-                        spellCheck
-                        autoFocus={false}
-                        placeholder="Click to start editing..."
-                        style={{
-                          outline: "none",
-                          direction: "ltr",
-                          textAlign: "left",
-                          unicodeBidi: "embed",
-                        }}
-                        className="focus:outline-none"
+                  {/* Header */}
+                  <header
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: shouldShowPhotoArea && (showPhoto && data.personalInfo.photo || !readOnly && !isPreviewMode)
+                        ? "auto 1fr"
+                        : "1fr",
+                      gap: shouldShowPhotoArea ? "16px" : "0",
+                      alignItems: "center",
+                      marginBottom: "16px",
+                      paddingBottom: "12px",
+                      borderBottom: `2px solid ${accentColor}`,
+                    }}
+                  >
+                    {/* Photo Controls */}
+                    {isEditable && (
+                      <PhotoControls
+                        photo={data.personalInfo.photo}
+                        showPhoto={showPhoto}
+                        onTogglePhoto={handleTogglePhoto}
+                        onUploadPhoto={handleUploadPhoto}
+                        onRemovePhoto={handleRemovePhoto}
+                        accentColor={accentColor}
                       />
-                    </Slate>
-                  </div>
-                </header>
+                    )}
+                    {!isEditable && showPhoto && data.personalInfo.photo && (
+                      <img
+                        src={data.personalInfo.photo}
+                        alt="Profile"
+                        style={{
+                          width: "72px",
+                          height: "72px",
+                          borderRadius: "50%",
+                          objectFit: "cover",
+                          border: `2px solid ${accentColor}`,
+                        }}
+                      />
+                    )}
 
-                {/* Sections - Draggable with DnD */}
-                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleSectionDragEnd}>
-                  <SortableContext items={sectionOrder} strategy={verticalListSortingStrategy}>
-                    {sectionOrder.map((sectionId) => (
-                      <DraggableSection
-                        key={sectionId}
-                        id={sectionId}
-                        readOnly={readOnly || isPreviewMode}
-                        isActive={activeSection === sectionId}
-                        onActivate={() => setActiveSection(sectionId)}
-                      >
-                        <div className="mb-5">
-                          {/* Section Title */}
-                          <h2
-                            style={{
-                              fontSize: "11px",
-                              fontWeight: 700,
-                              color: accentColor,
-                              borderBottom: `1px solid ${accentColor}`,
-                              paddingBottom: "4px",
-                              marginBottom: "10px",
-                              letterSpacing: "0.05em",
-                              textTransform: "uppercase",
-                            }}
-                          >
-                            {SECTION_TITLES[sectionId] || sectionId.toUpperCase()}
-                          </h2>
-                          
-                          {/* Section Content */}
-                          <div style={{ fontSize: "10px", lineHeight: 1.5, color: "#374151" }}>
-                            {sectionId === "summary" && (
-                              <p style={{ marginBottom: "8px" }}>
-                                {data.summary || "Click to add your professional summary..."}
-                              </p>
-                            )}
+                    {/* Header Content */}
+                    <div style={{ textAlign: shouldShowPhotoArea && (showPhoto && data.personalInfo.photo || isEditable) ? "left" : "center" }}>
+                      <InlineEditableField
+                        value={data.personalInfo.name}
+                        onChange={(v) => handleFieldChange("personalInfo.name", v)}
+                        placeholder="Your Name"
+                        disabled={!isEditable}
+                        style={{
+                          fontSize: "22px",
+                          fontWeight: 700,
+                          color: "#111827",
+                          marginBottom: "2px",
+                          letterSpacing: "0.02em",
+                        }}
+                      />
+                      <InlineEditableField
+                        value={data.personalInfo.title}
+                        onChange={(v) => handleFieldChange("personalInfo.title", v)}
+                        placeholder="Professional Title"
+                        disabled={!isEditable}
+                        style={{
+                          fontSize: "12px",
+                          color: accentColor,
+                          fontWeight: 500,
+                        }}
+                      />
+                      <div className="flex flex-wrap items-center gap-2 mt-2 text-[9px] text-gray-600">
+                        <InlineEditableField
+                          value={data.personalInfo.email}
+                          onChange={(v) => handleFieldChange("personalInfo.email", v)}
+                          placeholder="email@example.com"
+                          disabled={!isEditable}
+                          style={{ fontSize: "9px", color: "#4B5563" }}
+                        />
+                        <span>•</span>
+                        <InlineEditableField
+                          value={data.personalInfo.phone}
+                          onChange={(v) => handleFieldChange("personalInfo.phone", v)}
+                          placeholder="Phone"
+                          disabled={!isEditable}
+                          style={{ fontSize: "9px", color: "#4B5563" }}
+                        />
+                        <span>•</span>
+                        <InlineEditableField
+                          value={data.personalInfo.location}
+                          onChange={(v) => handleFieldChange("personalInfo.location", v)}
+                          placeholder="Location"
+                          disabled={!isEditable}
+                          style={{ fontSize: "9px", color: "#4B5563" }}
+                        />
+                      </div>
+                    </div>
+                  </header>
+
+                  {/* Sections - Draggable */}
+                  <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleSectionDragEnd}>
+                    <SortableContext items={sectionOrder} strategy={verticalListSortingStrategy}>
+                      {sectionOrder.map((sectionId) => (
+                        <DraggableSection
+                          key={sectionId}
+                          id={sectionId}
+                          readOnly={!isEditable}
+                          isActive={activeSection === sectionId}
+                          onActivate={() => setActiveSection(sectionId)}
+                        >
+                          <div className="mb-5">
+                            {/* Section Title */}
+                            <h2
+                              style={{
+                                fontSize: "11px",
+                                fontWeight: 700,
+                                color: accentColor,
+                                borderBottom: `1px solid ${accentColor}`,
+                                paddingBottom: "4px",
+                                marginBottom: "10px",
+                                letterSpacing: "0.05em",
+                                textTransform: "uppercase",
+                              }}
+                            >
+                              {SECTION_TITLES[sectionId] || sectionId.toUpperCase()}
+                            </h2>
                             
-                            {sectionId === "experience" && data.experience && data.experience.length > 0 && (
-                              <div>
-                                {data.experience.map((exp, idx) => (
-                                  <div key={exp.id || idx} style={{ marginBottom: "14px" }}>
-                                    <div style={{ fontWeight: 700, fontSize: "11px", color: "#111827" }}>
-                                      {exp.position}
+                            {/* Section Content */}
+                            <div style={{ fontSize: "10px", lineHeight: 1.5, color: "#374151" }}>
+                              {/* Summary Section */}
+                              {sectionId === "summary" && (
+                                <InlineEditableField
+                                  value={data.summary}
+                                  onChange={(v) => handleFieldChange("summary", v)}
+                                  placeholder="Write a compelling 2-3 line summary of your professional experience..."
+                                  disabled={!isEditable}
+                                  multiline
+                                  style={{
+                                    fontSize: "10px",
+                                    lineHeight: 1.5,
+                                    color: "#374151",
+                                  }}
+                                />
+                              )}
+                              
+                              {/* Experience Section - Nested DnD */}
+                              {sectionId === "experience" && (
+                                <DndContext
+                                  sensors={sensors}
+                                  collisionDetection={closestCenter}
+                                  onDragEnd={handleExperienceDragEnd}
+                                >
+                                  <SortableContext
+                                    items={data.experience.map(e => e.id)}
+                                    strategy={verticalListSortingStrategy}
+                                  >
+                                    <AnimatePresence>
+                                      {data.experience.map((exp, idx) => (
+                                        <DraggableExperienceEntry
+                                          key={exp.id}
+                                          entry={exp}
+                                          onChange={(entry) => handleExperienceChange(idx, entry)}
+                                          onDelete={() => handleExperienceDelete(idx)}
+                                          accentColor={accentColor}
+                                          readOnly={!isEditable}
+                                        />
+                                      ))}
+                                    </AnimatePresence>
+                                  </SortableContext>
+                                </DndContext>
+                              )}
+                              
+                              {/* Add Experience Button */}
+                              {sectionId === "experience" && isEditable && (
+                                <button
+                                  onClick={handleAddExperience}
+                                  className="flex items-center gap-1 text-[9px] text-muted-foreground hover:text-primary transition-colors mt-2"
+                                >
+                                  <Plus className="w-3 h-3" />
+                                  Add experience
+                                </button>
+                              )}
+                              
+                              {/* Skills Section */}
+                              {sectionId === "skills" && data.skills && (
+                                <div className="space-y-1.5">
+                                  {data.skills.map((skillGroup, idx) => (
+                                    <div key={idx} className="flex flex-wrap items-baseline gap-1">
+                                      <InlineEditableField
+                                        value={skillGroup.category}
+                                        onChange={(v) => {
+                                          const newSkills = [...data.skills];
+                                          newSkills[idx] = { ...skillGroup, category: v };
+                                          handleFieldChange("skills", newSkills);
+                                        }}
+                                        placeholder="Category"
+                                        disabled={!isEditable}
+                                        style={{
+                                          fontWeight: 600,
+                                          fontSize: "9px",
+                                          color: "#374151",
+                                        }}
+                                      />
+                                      <span className="text-[9px]">:</span>
+                                      <InlineEditableField
+                                        value={skillGroup.items.join(" · ")}
+                                        onChange={(v) => {
+                                          const newSkills = [...data.skills];
+                                          newSkills[idx] = { ...skillGroup, items: v.split(" · ").map(s => s.trim()).filter(Boolean) };
+                                          handleFieldChange("skills", newSkills);
+                                        }}
+                                        placeholder="Skill 1 · Skill 2 · Skill 3"
+                                        disabled={!isEditable}
+                                        style={{
+                                          fontSize: "9px",
+                                          color: "#374151",
+                                        }}
+                                      />
                                     </div>
-                                    <div style={{ fontWeight: 600, fontSize: "10px", color: accentColor }}>
-                                      {exp.company}
-                                    </div>
-                                    <div style={{ fontSize: "9px", color: "#6B7280", marginBottom: "4px" }}>
-                                      {exp.startDate} - {exp.endDate} • {exp.location}
-                                    </div>
-                                    {exp.bullets && exp.bullets.length > 0 && (
-                                      <ul style={{ listStyle: "none", padding: 0, margin: "6px 0 0 0" }}>
-                                        {exp.bullets.map((bullet, bIdx) => (
-                                          <li
-                                            key={bIdx}
-                                            style={{
-                                              fontSize: "9px",
-                                              lineHeight: 1.4,
-                                              color: "#374151",
-                                              display: "flex",
-                                              alignItems: "flex-start",
-                                              gap: "8px",
-                                              marginBottom: "3px",
-                                            }}
-                                          >
-                                            <span style={{ color: accentColor, flexShrink: 0 }}>▸</span>
-                                            <span style={{ flex: 1 }}>{bullet}</span>
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                            
-                            {sectionId === "skills" && data.skills && data.skills.length > 0 && (
-                              <div>
-                                {data.skills.map((skillGroup, idx) => (
-                                  <div key={idx} style={{ marginBottom: "6px" }}>
-                                    <span style={{ fontWeight: 600, color: "#374151" }}>
-                                      {skillGroup.category}:
-                                    </span>{" "}
-                                    <span style={{ color: "#374151" }}>
-                                      {skillGroup.items.join(" · ")}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                            
-                            {sectionId === "education" && data.education && data.education.length > 0 && (
-                              <div>
-                                {data.education.map((edu, idx) => (
-                                  <div key={edu.id || idx} style={{ marginBottom: "10px" }}>
-                                    <div style={{ fontWeight: 700, fontSize: "10px", color: "#111827" }}>
-                                      {edu.degree} {edu.field ? `in ${edu.field}` : ""}
-                                    </div>
-                                    <div style={{ fontSize: "10px", color: accentColor }}>
-                                      {edu.school}
-                                    </div>
-                                    <div style={{ fontSize: "9px", color: "#6B7280" }}>
-                                      {edu.endDate}
-                                      {edu.gpa && ` • GPA: ${edu.gpa}`}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                            
-                            {sectionId === "projects" && data.projects && data.projects.length > 0 && (
-                              <div>
-                                {data.projects.map((project, idx) => (
-                                  <div key={project.id || idx} style={{ marginBottom: "10px" }}>
-                                    <div style={{ fontWeight: 700, fontSize: "10px", color: "#111827" }}>
-                                      {project.name}
-                                    </div>
-                                    <div style={{ fontSize: "9px", color: "#374151", marginTop: "2px" }}>
-                                      {project.description}
-                                    </div>
-                                    {project.technologies && (
-                                      <div style={{ fontSize: "9px", color: "#6B7280", marginTop: "2px" }}>
-                                        {project.technologies.join(" · ")}
+                                  ))}
+                                </div>
+                              )}
+                              
+                              {/* Education Section */}
+                              {sectionId === "education" && data.education && (
+                                <div className="space-y-3">
+                                  {data.education.map((edu, idx) => (
+                                    <div key={edu.id || idx}>
+                                      <InlineEditableField
+                                        value={`${edu.degree}${edu.field ? ` in ${edu.field}` : ""}`}
+                                        onChange={(v) => {
+                                          const newEdu = [...data.education];
+                                          const parts = v.split(" in ");
+                                          newEdu[idx] = { ...edu, degree: parts[0], field: parts[1] || "" };
+                                          handleFieldChange("education", newEdu);
+                                        }}
+                                        placeholder="Degree in Field"
+                                        disabled={!isEditable}
+                                        style={{
+                                          fontWeight: 700,
+                                          fontSize: "10px",
+                                          color: "#111827",
+                                        }}
+                                      />
+                                      <InlineEditableField
+                                        value={edu.school}
+                                        onChange={(v) => {
+                                          const newEdu = [...data.education];
+                                          newEdu[idx] = { ...edu, school: v };
+                                          handleFieldChange("education", newEdu);
+                                        }}
+                                        placeholder="Institution Name"
+                                        disabled={!isEditable}
+                                        style={{
+                                          fontSize: "10px",
+                                          color: accentColor,
+                                        }}
+                                      />
+                                      <div className="text-[9px] text-gray-500">
+                                        <InlineEditableField
+                                          value={edu.endDate}
+                                          onChange={(v) => {
+                                            const newEdu = [...data.education];
+                                            newEdu[idx] = { ...edu, endDate: v };
+                                            handleFieldChange("education", newEdu);
+                                          }}
+                                          placeholder="Graduation Year"
+                                          disabled={!isEditable}
+                                          style={{ fontSize: "9px", color: "#6B7280", display: "inline" }}
+                                        />
+                                        {edu.gpa && (
+                                          <span>
+                                            {" • GPA: "}
+                                            <InlineEditableField
+                                              value={edu.gpa}
+                                              onChange={(v) => {
+                                                const newEdu = [...data.education];
+                                                newEdu[idx] = { ...edu, gpa: v };
+                                                handleFieldChange("education", newEdu);
+                                              }}
+                                              placeholder="GPA"
+                                              disabled={!isEditable}
+                                              style={{ fontSize: "9px", color: "#6B7280", display: "inline" }}
+                                            />
+                                          </span>
+                                        )}
                                       </div>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                            
-                            {sectionId === "certifications" && data.certifications && data.certifications.length > 0 && (
-                              <div>
-                                {data.certifications.map((cert, idx) => (
-                                  <div key={cert.id || idx} style={{ marginBottom: "6px" }}>
-                                    <span style={{ fontWeight: 600, fontSize: "9px", color: "#111827" }}>
-                                      {cert.name}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              
+                              {/* Projects Section */}
+                              {sectionId === "projects" && data.projects && (
+                                <div className="space-y-3">
+                                  {data.projects.map((project, idx) => (
+                                    <div key={project.id || idx}>
+                                      <InlineEditableField
+                                        value={project.name}
+                                        onChange={(v) => {
+                                          const newProjects = [...(data.projects || [])];
+                                          newProjects[idx] = { ...project, name: v };
+                                          handleFieldChange("projects", newProjects);
+                                        }}
+                                        placeholder="Project Name"
+                                        disabled={!isEditable}
+                                        style={{
+                                          fontWeight: 700,
+                                          fontSize: "10px",
+                                          color: "#111827",
+                                        }}
+                                      />
+                                      <InlineEditableField
+                                        value={project.description}
+                                        onChange={(v) => {
+                                          const newProjects = [...(data.projects || [])];
+                                          newProjects[idx] = { ...project, description: v };
+                                          handleFieldChange("projects", newProjects);
+                                        }}
+                                        placeholder="Project description"
+                                        disabled={!isEditable}
+                                        multiline
+                                        style={{
+                                          fontSize: "9px",
+                                          color: "#374151",
+                                          marginTop: "2px",
+                                        }}
+                                      />
+                                      {project.technologies && (
+                                        <div className="text-[9px] text-gray-500 mt-1">
+                                          {project.technologies.join(" · ")}
+                                        </div>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              
+                              {/* Certifications Section */}
+                              {sectionId === "certifications" && data.certifications && (
+                                <div className="space-y-1">
+                                  {data.certifications.map((cert, idx) => (
+                                    <div key={cert.id || idx} className="flex items-baseline gap-1 text-[9px]">
+                                      <InlineEditableField
+                                        value={cert.name}
+                                        onChange={(v) => {
+                                          const newCerts = [...(data.certifications || [])];
+                                          newCerts[idx] = { ...cert, name: v };
+                                          handleFieldChange("certifications", newCerts);
+                                        }}
+                                        placeholder="Certification Name"
+                                        disabled={!isEditable}
+                                        style={{ fontWeight: 600, fontSize: "9px", color: "#111827" }}
+                                      />
+                                      <span>•</span>
+                                      <InlineEditableField
+                                        value={cert.issuer}
+                                        onChange={(v) => {
+                                          const newCerts = [...(data.certifications || [])];
+                                          newCerts[idx] = { ...cert, issuer: v };
+                                          handleFieldChange("certifications", newCerts);
+                                        }}
+                                        placeholder="Issuer"
+                                        disabled={!isEditable}
+                                        style={{ fontSize: "9px", color: "#374151" }}
+                                      />
+                                      <span>•</span>
+                                      <InlineEditableField
+                                        value={cert.date}
+                                        onChange={(v) => {
+                                          const newCerts = [...(data.certifications || [])];
+                                          newCerts[idx] = { ...cert, date: v };
+                                          handleFieldChange("certifications", newCerts);
+                                        }}
+                                        placeholder="Year"
+                                        disabled={!isEditable}
+                                        style={{ fontSize: "9px", color: "#6B7280" }}
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              
+                              {/* Languages Section */}
+                              {sectionId === "languages" && data.languages && (
+                                <div className="flex flex-wrap gap-2 text-[9px]">
+                                  {data.languages.map((lang, idx) => (
+                                    <span key={idx}>
+                                      <InlineEditableField
+                                        value={`${lang.language} (${lang.proficiency})`}
+                                        onChange={(v) => {
+                                          const match = v.match(/^(.+?)\s*\((.+?)\)$/);
+                                          if (match) {
+                                            const newLangs = [...(data.languages || [])];
+                                            newLangs[idx] = { language: match[1], proficiency: match[2] };
+                                            handleFieldChange("languages", newLangs);
+                                          }
+                                        }}
+                                        placeholder="Language (Proficiency)"
+                                        disabled={!isEditable}
+                                        style={{ fontSize: "9px", color: "#374151" }}
+                                      />
+                                      {idx < (data.languages?.length || 0) - 1 && <span className="ml-1">·</span>}
                                     </span>
-                                    {" • "}
-                                    <span style={{ fontSize: "9px", color: "#374151" }}>
-                                      {cert.issuer}
-                                    </span>
-                                    {cert.date && (
-                                      <>
-                                        {" • "}
-                                        <span style={{ fontSize: "9px", color: "#6B7280" }}>
-                                          {cert.date}
-                                        </span>
-                                      </>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                            
-                            {sectionId === "languages" && data.languages && data.languages.length > 0 && (
-                              <div>
-                                {data.languages.map((lang, idx) => (
-                                  <span key={idx} style={{ fontSize: "9px", color: "#374151" }}>
-                                    {lang.language} ({lang.proficiency})
-                                    {idx < data.languages!.length - 1 && " · "}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                            
-                            {/* Placeholder for empty or unimplemented sections */}
-                            {!["summary", "experience", "skills", "education", "projects", "certifications", "languages"].includes(sectionId) && (
-                              <p style={{ fontSize: "9px", color: "#9CA3AF", fontStyle: "italic" }}>
-                                Add content for {SECTION_TITLES[sectionId] || sectionId}...
-                              </p>
-                            )}
+                                  ))}
+                                </div>
+                              )}
+                              
+                              {/* Placeholder for other sections */}
+                              {!["summary", "experience", "skills", "education", "projects", "certifications", "languages"].includes(sectionId) && (
+                                <p className="text-[9px] text-gray-400 italic">
+                                  Click to add content for {SECTION_TITLES[sectionId] || sectionId}...
+                                </p>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </DraggableSection>
-                    ))}
-                  </SortableContext>
-                </DndContext>
+                        </DraggableSection>
+                      ))}
+                    </SortableContext>
+                  </DndContext>
+                </div>
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </div>
+        </div>
+
+        {/* ATS Score Sidebar */}
+        <div className="w-72 border-l border-border/50 bg-card/50 backdrop-blur-sm overflow-y-auto p-4 hidden lg:block">
+          <LiveATSWidget
+            score={atsScore}
+            animatedScore={atsAnimatedScore}
+            breakdown={atsBreakdown}
+            feedback={atsFeedback}
+            sectionSignals={atsSectionSignals}
+            isHighScore={atsIsHighScore}
+            expanded
+          />
         </div>
       </div>
 
@@ -1139,7 +988,7 @@ const InlineSlateCanvas = ({
       <div className="hidden sm:flex items-center justify-between px-4 py-2 border-t border-border/50 bg-card/80 backdrop-blur-sm flex-shrink-0">
         <span className="text-xs text-muted-foreground">
           {template.name} • A4 • {settings.layout?.replace("-", " ")} layout
-          {!readOnly && !isPreviewMode && " • Click any text to edit inline"}
+          {isEditable && " • Click any text to edit inline"}
         </span>
         <span className="text-xs text-muted-foreground">
           {isPreviewMode ? "Preview mode" : "Auto-saved"}
