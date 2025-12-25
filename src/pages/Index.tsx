@@ -7,7 +7,6 @@ import TemplatesSection from "@/components/TemplatesSection";
 import FeaturesSection from "@/components/FeaturesSection";
 import CTASection from "@/components/CTASection";
 import Footer from "@/components/Footer";
-import CinematicResumePreview from "@/components/CinematicResumePreview";
 
 const Index = () => {
   return (
@@ -15,7 +14,6 @@ const Index = () => {
       <Header />
       <main>
         <HeroSection />
-        <CinematicResumePreview />
         <HowItWorksSection />
         <LiveAnalysisSection />
         <AudienceSection />
