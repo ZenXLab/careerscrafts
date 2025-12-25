@@ -338,7 +338,12 @@ export const InlineEditableField = ({
             ${!localValue ? "text-muted-foreground italic" : ""}
             ${className}
           `}
-          style={{ minHeight: multiline ? "3em" : "1.2em", direction: "ltr", unicodeBidi: "plaintext" }}
+          style={{ 
+            minHeight: multiline ? "3em" : "1.2em", 
+            direction: "ltr", 
+            textAlign: "left",
+            unicodeBidi: "bidi-override",
+          }}
         >
           {localValue || placeholder}
         </div>
