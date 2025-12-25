@@ -373,10 +373,7 @@ export const getSectionStatus = (
     return "added";
   }
   
-  // Check if locked for this role
-  if (isSectionLockedForRole(sectionId, role)) {
-    return "locked";
-  }
-  
+  // ALL SECTIONS UNLOCKED - No role-based locking
+  // Users can add any section they want
   return "available";
 };

@@ -943,6 +943,183 @@ const InlineSlateCanvas = ({
                     </Slate>
                   </div>
                 </header>
+
+                {/* Sections - Draggable with DnD */}
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleSectionDragEnd}>
+                  <SortableContext items={sectionOrder} strategy={verticalListSortingStrategy}>
+                    {sectionOrder.map((sectionId) => (
+                      <DraggableSection
+                        key={sectionId}
+                        id={sectionId}
+                        readOnly={readOnly || isPreviewMode}
+                        isActive={activeSection === sectionId}
+                        onActivate={() => setActiveSection(sectionId)}
+                      >
+                        <div className="mb-5">
+                          {/* Section Title */}
+                          <h2
+                            style={{
+                              fontSize: "11px",
+                              fontWeight: 700,
+                              color: accentColor,
+                              borderBottom: `1px solid ${accentColor}`,
+                              paddingBottom: "4px",
+                              marginBottom: "10px",
+                              letterSpacing: "0.05em",
+                              textTransform: "uppercase",
+                            }}
+                          >
+                            {SECTION_TITLES[sectionId] || sectionId.toUpperCase()}
+                          </h2>
+                          
+                          {/* Section Content */}
+                          <div style={{ fontSize: "10px", lineHeight: 1.5, color: "#374151" }}>
+                            {sectionId === "summary" && (
+                              <p style={{ marginBottom: "8px" }}>
+                                {data.summary || "Click to add your professional summary..."}
+                              </p>
+                            )}
+                            
+                            {sectionId === "experience" && data.experience && data.experience.length > 0 && (
+                              <div>
+                                {data.experience.map((exp, idx) => (
+                                  <div key={exp.id || idx} style={{ marginBottom: "14px" }}>
+                                    <div style={{ fontWeight: 700, fontSize: "11px", color: "#111827" }}>
+                                      {exp.position}
+                                    </div>
+                                    <div style={{ fontWeight: 600, fontSize: "10px", color: accentColor }}>
+                                      {exp.company}
+                                    </div>
+                                    <div style={{ fontSize: "9px", color: "#6B7280", marginBottom: "4px" }}>
+                                      {exp.startDate} - {exp.endDate} • {exp.location}
+                                    </div>
+                                    {exp.bullets && exp.bullets.length > 0 && (
+                                      <ul style={{ listStyle: "none", padding: 0, margin: "6px 0 0 0" }}>
+                                        {exp.bullets.map((bullet, bIdx) => (
+                                          <li
+                                            key={bIdx}
+                                            style={{
+                                              fontSize: "9px",
+                                              lineHeight: 1.4,
+                                              color: "#374151",
+                                              display: "flex",
+                                              alignItems: "flex-start",
+                                              gap: "8px",
+                                              marginBottom: "3px",
+                                            }}
+                                          >
+                                            <span style={{ color: accentColor, flexShrink: 0 }}>▸</span>
+                                            <span style={{ flex: 1 }}>{bullet}</span>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            
+                            {sectionId === "skills" && data.skills && data.skills.length > 0 && (
+                              <div>
+                                {data.skills.map((skillGroup, idx) => (
+                                  <div key={idx} style={{ marginBottom: "6px" }}>
+                                    <span style={{ fontWeight: 600, color: "#374151" }}>
+                                      {skillGroup.category}:
+                                    </span>{" "}
+                                    <span style={{ color: "#374151" }}>
+                                      {skillGroup.items.join(" · ")}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            
+                            {sectionId === "education" && data.education && data.education.length > 0 && (
+                              <div>
+                                {data.education.map((edu, idx) => (
+                                  <div key={edu.id || idx} style={{ marginBottom: "10px" }}>
+                                    <div style={{ fontWeight: 700, fontSize: "10px", color: "#111827" }}>
+                                      {edu.degree} {edu.field ? `in ${edu.field}` : ""}
+                                    </div>
+                                    <div style={{ fontSize: "10px", color: accentColor }}>
+                                      {edu.school}
+                                    </div>
+                                    <div style={{ fontSize: "9px", color: "#6B7280" }}>
+                                      {edu.endDate}
+                                      {edu.gpa && ` • GPA: ${edu.gpa}`}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            
+                            {sectionId === "projects" && data.projects && data.projects.length > 0 && (
+                              <div>
+                                {data.projects.map((project, idx) => (
+                                  <div key={project.id || idx} style={{ marginBottom: "10px" }}>
+                                    <div style={{ fontWeight: 700, fontSize: "10px", color: "#111827" }}>
+                                      {project.name}
+                                    </div>
+                                    <div style={{ fontSize: "9px", color: "#374151", marginTop: "2px" }}>
+                                      {project.description}
+                                    </div>
+                                    {project.technologies && (
+                                      <div style={{ fontSize: "9px", color: "#6B7280", marginTop: "2px" }}>
+                                        {project.technologies.join(" · ")}
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            
+                            {sectionId === "certifications" && data.certifications && data.certifications.length > 0 && (
+                              <div>
+                                {data.certifications.map((cert, idx) => (
+                                  <div key={cert.id || idx} style={{ marginBottom: "6px" }}>
+                                    <span style={{ fontWeight: 600, fontSize: "9px", color: "#111827" }}>
+                                      {cert.name}
+                                    </span>
+                                    {" • "}
+                                    <span style={{ fontSize: "9px", color: "#374151" }}>
+                                      {cert.issuer}
+                                    </span>
+                                    {cert.date && (
+                                      <>
+                                        {" • "}
+                                        <span style={{ fontSize: "9px", color: "#6B7280" }}>
+                                          {cert.date}
+                                        </span>
+                                      </>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            
+                            {sectionId === "languages" && data.languages && data.languages.length > 0 && (
+                              <div>
+                                {data.languages.map((lang, idx) => (
+                                  <span key={idx} style={{ fontSize: "9px", color: "#374151" }}>
+                                    {lang.language} ({lang.proficiency})
+                                    {idx < data.languages!.length - 1 && " · "}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            
+                            {/* Placeholder for empty or unimplemented sections */}
+                            {!["summary", "experience", "skills", "education", "projects", "certifications", "languages"].includes(sectionId) && (
+                              <p style={{ fontSize: "9px", color: "#9CA3AF", fontStyle: "italic" }}>
+                                Add content for {SECTION_TITLES[sectionId] || sectionId}...
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </DraggableSection>
+                    ))}
+                  </SortableContext>
+                </DndContext>
               </div>
             </div>
           </motion.div>

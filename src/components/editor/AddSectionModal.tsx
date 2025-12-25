@@ -214,7 +214,7 @@ const AddSectionModal = ({
                 <div className="flex items-center gap-2 mb-3">
                   <h3 className="text-sm font-semibold text-foreground">Advanced Sections</h3>
                   <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 font-medium">
-                    Role-Based
+                    Multi-Entry
                   </span>
                 </div>
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
@@ -262,8 +262,8 @@ const AddSectionModal = ({
             {/* Footer */}
             <div className="p-4 border-t border-border bg-muted/30 flex items-center justify-between">
               <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                <Lock className="w-3 h-3" />
-                Locked sections unlock based on your career stage
+                <Info className="w-3 h-3" />
+                All sections available - choose what fits your profile
               </p>
               <p className="text-xs text-muted-foreground">
                 All sections are ATS-safe
