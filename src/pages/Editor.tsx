@@ -261,6 +261,11 @@ const Editor = () => {
             mode={contextualPanelMode}
             onClose={() => setContextualPanelMode(null)}
             currentContent={resumeData.summary}
+            resumeContent={`${resumeData.personalInfo.name} ${resumeData.personalInfo.title} ${resumeData.summary} ${
+              resumeData.experience.map(e => `${e.position} ${e.company} ${e.bullets.join(' ')}`).join(' ')
+            } ${resumeData.education.map(e => `${e.degree} ${e.school} ${e.field || ''}`).join(' ')} ${
+              resumeData.skills?.map(s => s.items.join(' ')).join(' ') || ''
+            }`}
           />
         )}
       </div>

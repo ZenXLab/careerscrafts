@@ -280,30 +280,44 @@ export const InlineEditableField = ({
   };
 
   return (
-    <div className="relative inline-block w-full" style={style}>
-      {/* Editable Content */}
-      <div
-        ref={editRef}
-        contentEditable={isEditing}
-        suppressContentEditableWarning
-        onClick={handleClick}
-        onBlur={handleBlur}
-        onKeyDown={handleKeyDown}
-        onInput={handleInput}
-        onMouseUp={handleTextSelect}
-        className={`
-          outline-none transition-all duration-150 cursor-text
-          ${isEditing 
-            ? "bg-blue-50/50 ring-1 ring-blue-200 rounded px-1 -mx-1" 
-            : "hover:bg-blue-50/30 rounded px-1 -mx-1"
-          }
-          ${!localValue && !isEditing ? "text-gray-400 italic" : ""}
-          ${className}
-        `}
-        style={{ minHeight: multiline ? "3em" : "1.2em" }}
-      >
-        {isEditing ? localValue : renderTextWithIssues()}
-      </div>
+    <div className="relative inline-block w-full group" style={style}>
+      {/* Display layer (shows spell check underlines) */}
+      {!isEditing && (
+        <div
+          onClick={handleClick}
+          className={`
+            outline-none transition-all duration-150 cursor-text
+            hover:bg-blue-50/30 rounded px-1 -mx-1
+            ${!localValue ? "text-gray-400 italic" : ""}
+            ${className}
+          `}
+          style={{ minHeight: multiline ? "3em" : "1.2em" }}
+        >
+          {renderTextWithIssues()}
+        </div>
+      )}
+
+      {/* Editable layer (plain text editing) */}
+      {isEditing && (
+        <div
+          ref={editRef}
+          contentEditable
+          suppressContentEditableWarning
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
+          onInput={handleInput}
+          onMouseUp={handleTextSelect}
+          className={`
+            outline-none transition-all duration-150 cursor-text
+            bg-blue-50/50 ring-1 ring-blue-200 rounded px-1 -mx-1
+            ${!localValue ? "text-gray-400 italic" : ""}
+            ${className}
+          `}
+          style={{ minHeight: multiline ? "3em" : "1.2em" }}
+        >
+          {localValue || placeholder}
+        </div>
+      )}
 
       {/* Spell/Grammar Suggestion Tooltip */}
       <AnimatePresence>
