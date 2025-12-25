@@ -66,6 +66,161 @@ export interface TemplateConfig {
   layout: "single-column" | "two-column" | "sidebar";
 }
 
+export interface UserSegment {
+  careerStage: "student" | "fresher" | "professional" | "senior" | "executive";
+  urgency: "exploring" | "active" | "interview" | "emergency";
+  yearsOfExperience: number;
+  industry: string;
+  targetRole: string;
+  geography: "india" | "global";
+  isReturning: boolean;
+  resumeQualityScore?: number;
+  atsRiskLevel?: "low" | "medium" | "high";
+}
+
+// Hero Section - Technical Java Architect Resume
+export const heroResumeData: ResumeData = {
+  personalInfo: {
+    name: "Priya Sharma",
+    title: "Senior Technical Java Architect",
+    email: "priya.sharma@email.com",
+    phone: "+91 98765 43210",
+    location: "Bangalore, India",
+    linkedin: "linkedin.com/in/priyasharma",
+    website: "priyasharma.dev",
+    photo: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&h=150&fit=crop&crop=face"
+  },
+  summary: "Distinguished Technical Architect with 12+ years of experience designing enterprise-scale Java applications and microservices architectures. Led digital transformation initiatives for Fortune 500 clients, delivering platforms processing 50M+ transactions daily. Expert in cloud-native solutions, distributed systems, and mentoring high-performing engineering teams.",
+  experience: [
+    {
+      id: "exp1",
+      company: "Infosys Technologies",
+      position: "Principal Technical Architect",
+      location: "Bangalore, India",
+      startDate: "Apr 2021",
+      endDate: "Present",
+      current: true,
+      bullets: [
+        "Architected microservices platform for banking client serving 25M+ users with 99.99% uptime",
+        "Led team of 45 engineers across 3 countries, reducing time-to-market by 60%",
+        "Designed event-driven architecture processing 2M+ real-time transactions per hour",
+        "Implemented DevSecOps practices reducing security vulnerabilities by 85%"
+      ]
+    },
+    {
+      id: "exp2",
+      company: "Wipro Digital",
+      position: "Senior Solutions Architect",
+      location: "Hyderabad, India",
+      startDate: "Jan 2018",
+      endDate: "Mar 2021",
+      current: false,
+      bullets: [
+        "Designed cloud migration strategy for telecom giant, saving $4.2M annually in infrastructure costs",
+        "Built real-time analytics platform ingesting 500GB+ daily using Kafka and Spark",
+        "Established architectural governance framework adopted across 12 delivery centers",
+        "Mentored 20+ developers, with 8 achieving senior architect roles"
+      ]
+    },
+    {
+      id: "exp3",
+      company: "Tata Consultancy Services",
+      position: "Technical Lead",
+      location: "Mumbai, India",
+      startDate: "Jul 2014",
+      endDate: "Dec 2017",
+      current: false,
+      bullets: [
+        "Developed core banking module handling ₹500Cr+ daily transactions",
+        "Migrated legacy monolith to Spring Boot microservices, improving performance 4x",
+        "Implemented CI/CD pipelines reducing deployment time from days to hours",
+        "Won TCS Best Innovation Award for automated testing framework"
+      ]
+    },
+    {
+      id: "exp4",
+      company: "Tech Mahindra",
+      position: "Senior Software Engineer",
+      location: "Pune, India",
+      startDate: "Jun 2012",
+      endDate: "Jun 2014",
+      current: false,
+      bullets: [
+        "Built RESTful APIs for e-commerce platform serving 1M+ daily requests",
+        "Optimized database queries reducing response time by 70%",
+        "Contributed to open-source Java libraries with 2K+ GitHub stars"
+      ]
+    }
+  ],
+  education: [
+    {
+      id: "edu1",
+      school: "Indian Institute of Technology, Delhi",
+      degree: "Master of Technology",
+      field: "Computer Science & Engineering",
+      location: "New Delhi, India",
+      startDate: "2010",
+      endDate: "2012",
+      gpa: "9.2/10"
+    },
+    {
+      id: "edu2",
+      school: "National Institute of Technology, Trichy",
+      degree: "Bachelor of Technology",
+      field: "Information Technology",
+      location: "Tiruchirappalli, India",
+      startDate: "2006",
+      endDate: "2010",
+      gpa: "8.8/10"
+    }
+  ],
+  skills: [
+    {
+      category: "Languages & Frameworks",
+      items: ["Java 17+", "Spring Boot", "Spring Cloud", "Hibernate", "Kotlin", "Python"]
+    },
+    {
+      category: "Architecture & Design",
+      items: ["Microservices", "Event-Driven", "Domain-Driven Design", "CQRS", "Saga Pattern", "API Gateway"]
+    },
+    {
+      category: "Cloud & DevOps",
+      items: ["AWS", "Azure", "Kubernetes", "Docker", "Terraform", "Jenkins", "ArgoCD"]
+    },
+    {
+      category: "Data & Messaging",
+      items: ["PostgreSQL", "MongoDB", "Redis", "Kafka", "RabbitMQ", "Elasticsearch"]
+    }
+  ],
+  certifications: [
+    { id: "cert1", name: "AWS Solutions Architect Professional", issuer: "Amazon Web Services", date: "2023" },
+    { id: "cert2", name: "Google Cloud Professional Architect", issuer: "Google", date: "2022" },
+    { id: "cert3", name: "Oracle Certified Master, Java SE", issuer: "Oracle", date: "2021" },
+    { id: "cert4", name: "TOGAF 9.2 Certified", issuer: "The Open Group", date: "2020" }
+  ],
+  projects: [
+    {
+      id: "proj1",
+      name: "Unified Payments Interface Gateway",
+      description: "Designed high-availability payment gateway processing 10M+ UPI transactions daily for major Indian bank",
+      technologies: ["Java 17", "Spring Boot", "Kafka", "Redis", "PostgreSQL", "Kubernetes"],
+      link: "Confidential"
+    },
+    {
+      id: "proj2",
+      name: "Open Banking Platform",
+      description: "Architected API banking platform enabling 200+ fintech integrations with PSD2 compliance",
+      technologies: ["Spring Cloud", "OAuth2", "Kong API Gateway", "MongoDB", "Docker"],
+      link: "Confidential"
+    }
+  ],
+  languages: [
+    { language: "English", proficiency: "Professional" },
+    { language: "Hindi", proficiency: "Native" },
+    { language: "Tamil", proficiency: "Conversational" }
+  ]
+};
+
 // Sample resume data for previews
 export const sampleResumeData: ResumeData = {
   personalInfo: {
@@ -181,7 +336,6 @@ export const sampleResumeData: ResumeData = {
   ]
 };
 
-// Alternative sample data for variety
 export const sampleResumeDataEngineer: ResumeData = {
   personalInfo: {
     name: "Marcus Johnson",
