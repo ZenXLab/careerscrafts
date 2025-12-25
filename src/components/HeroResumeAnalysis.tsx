@@ -222,22 +222,22 @@ const HeroResumeAnalysis = ({ onEditResume, onUploadNew }: HeroResumeAnalysisPro
   const data = uploadedResumeData;
 
   return (
-    <div className="relative w-full max-w-[800px] mx-auto">
+    <div className="relative w-full max-w-[800px] mx-auto px-4 sm:px-0">
       {/* Ambient Glow */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: phase >= 1 ? 0.6 : 0 }}
         transition={{ duration: 2 }}
-        className="absolute inset-0 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent rounded-full blur-[180px] -z-10 scale-150"
+        className="absolute inset-0 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent rounded-full blur-[100px] sm:blur-[180px] -z-10 scale-125 sm:scale-150"
       />
 
       {/* Book Container */}
       <motion.div
-        initial={{ opacity: 0, y: 50, scale: 0.9 }}
+        initial={{ opacity: 0, y: 30, scale: 0.95 }}
         animate={{ 
           opacity: phase >= 1 ? 1 : 0, 
-          y: phase >= 1 ? 0 : 50,
-          scale: phase >= 1 ? 1 : 0.9
+          y: phase >= 1 ? 0 : 30,
+          scale: phase >= 1 ? 1 : 0.95
         }}
         transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
         className="relative"
@@ -250,10 +250,10 @@ const HeroResumeAnalysis = ({ onEditResume, onUploadNew }: HeroResumeAnalysisPro
             initial={{ opacity: 0 }}
             animate={{ opacity: bookOpened ? 1 : 0 }}
             transition={{ duration: 0.5 }}
-            className="absolute top-0 left-1/2 -translate-x-1/2 z-20"
+            className="absolute top-0 left-1/2 -translate-x-1/2 z-20 hidden sm:block"
             style={{
-              width: "12px",
-              height: `${A4_HEIGHT * 0.36}px`,
+              width: "10px",
+              height: `${A4_HEIGHT * 0.28}px`,
               background: "linear-gradient(90deg, #1a1a1a 0%, #404040 30%, #666 50%, #404040 70%, #1a1a1a 100%)",
               boxShadow: "inset 0 0 10px rgba(0,0,0,0.5)",
               borderRadius: "2px"
