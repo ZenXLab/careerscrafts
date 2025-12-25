@@ -187,6 +187,41 @@ const Editor = () => {
       removable: true
     }]);
     setSectionOrder([...sectionOrder, sectionType]);
+    
+    // Initialize default data for the new section
+    const newResumeData = { ...resumeData };
+    
+    switch(sectionType) {
+      case "languages":
+        if (!newResumeData.languages) {
+          newResumeData.languages = [
+            { language: "English", proficiency: "Professional" }
+          ];
+        }
+        break;
+      case "certifications":
+        if (!newResumeData.certifications) {
+          newResumeData.certifications = [
+            { id: "cert1", name: "Certification Name", issuer: "Issuing Organization", date: "2024" }
+          ];
+        }
+        break;
+      case "projects":
+        if (!newResumeData.projects) {
+          newResumeData.projects = [
+            { 
+              id: "proj1", 
+              name: "Project Name", 
+              description: "Project description here", 
+              technologies: ["Technology 1", "Technology 2"],
+              link: ""
+            }
+          ];
+        }
+        break;
+    }
+    
+    setResumeData(newResumeData);
     setShowAddSection(false);
     toast({ title: "Section added", description: `${sectionType} section has been added.` });
   };

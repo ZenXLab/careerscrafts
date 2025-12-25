@@ -143,7 +143,68 @@ const LiveResumeCanvas = ({
     onDataChange(newData);
   }, [data, onDataChange]);
 
-  // Default design settings
+  // Get background style based on selected background
+  const getBackgroundStyle = (backgroundType?: string): React.CSSProperties => {
+    const bgType = backgroundType || "none";
+    
+    const patterns: Record<string, React.CSSProperties> = {
+      "none": { background: "white" },
+      "solid-green": { background: "#10b981" },
+      "hexagons": { 
+        background: "white",
+        backgroundImage: `url("data:image/svg+xml,%3Csvg width='28' height='49' viewBox='0 0 28 49' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23e5e7eb' fill-opacity='0.4'%3E%3Cpolygon fill-rule='evenodd' points='13.99 9.25 13.99 1 16.99 0 18.99 0 18.99 9.25 13.99 9.25'/%3E%3Cpolygon fill-rule='evenodd' points='13.99 41.25 13.99 49 16.99 49 18.99 49 18.99 41.25 13.99 41.25'/%3E%3C/g%3E%3C/svg%3E")` 
+      },
+      "waves": { 
+        background: "white",
+        backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='20' viewBox='0 0 100 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M21.184 20c.357-.13.72-.264 1.088-.402l1.768-.661C33.64 15.347 39.647 14 50 14c10.271 0 15.362 1.222 24.629 4.928.955.383 1.869.74 2.75 1.072h6.225c-2.51-.73-5.139-1.691-8.233-2.928C65.888 13.278 60.562 12 50 12c-10.626 0-16.855 1.397-26.66 5.063l-1.767.662c-2.475.923-4.66 1.674-6.724 2.275h6.335zm0-20C13.258 2.892 8.077 4 0 4V2c5.744 0 9.951-.574 14.85-2h6.334zM77.38 0C85.239 2.966 90.502 4 100 4V2c-6.842 0-11.386-.542-16.396-2h-6.225zM0 14c8.44 0 13.718-1.21 22.272-4.402l1.768-.661C33.64 5.347 39.647 4 50 4c10.271 0 15.362 1.222 24.629 4.928C84.112 12.722 89.438 14 100 14v-2c-10.271 0-15.362-1.222-24.629-4.928C65.888 3.278 60.562 2 50 2 39.374 2 33.145 3.397 23.34 7.063l-1.767.662C13.223 10.84 8.163 12 0 12v2z' fill='%23e5e7eb' fill-opacity='0.4' fill-rule='evenodd'/%3E%3C/svg%3E")` 
+      },
+      "triangles": { 
+        background: "white",
+        backgroundImage: `url("data:image/svg+xml,%3Csvg width='36' height='72' viewBox='0 0 36 72' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23e5e7eb' fill-opacity='0.4'%3E%3Cpath d='M2 6h12L8 18 2 6zm18 36h12l-6 12-6-12z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` 
+      },
+      "diagonal": { 
+        background: "white",
+        backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23e5e7eb' fill-opacity='0.4' fill-rule='evenodd'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E")` 
+      },
+      "grid": { 
+        background: "white",
+        backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23e5e7eb' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` 
+      },
+      "dots": { 
+        background: "white",
+        backgroundImage: `radial-gradient(circle, #e5e7eb 1px, transparent 1px)`,
+        backgroundSize: "20px 20px"
+      },
+      "curves-light": { background: "#f9fafb" },
+      "curves-dark": { background: "#f3f4f6" },
+      "dashed": { 
+        background: "white",
+        backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 10px, #e5e7eb 10px, #e5e7eb 20px)` 
+      },
+      "zigzag": { 
+        background: "white",
+        backgroundImage: `linear-gradient(135deg, #e5e7eb 25%, transparent 25%), linear-gradient(225deg, #e5e7eb 25%, transparent 25%), linear-gradient(45deg, #e5e7eb 25%, transparent 25%), linear-gradient(315deg, #e5e7eb 25%, white 25%)`,
+        backgroundPosition: "10px 0, 10px 0, 0 0, 0 0",
+        backgroundSize: "20px 20px",
+        backgroundRepeat: "repeat"
+      },
+      "circles": { 
+        background: "white",
+        backgroundImage: `radial-gradient(circle at 25px 25px, #e5e7eb 2%, transparent 0%), radial-gradient(circle at 75px 75px, #e5e7eb 2%, transparent 0%)`,
+        backgroundSize: "100px 100px"
+      },
+      "gradient-blue": { background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" },
+      "gradient-tech": { background: "linear-gradient(135deg, #667eea 0%, #64b3f4 100%)" },
+      "gradient-minimal": { background: "#fafafa" },
+      "solid-mint": { background: "#f0fdfa" },
+      "solid-beige": { background: "#fffbeb" },
+      "gradient-rainbow": { background: "linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #00f2fe 100%)" },
+    };
+    
+    return patterns[bgType] || patterns["none"];
+  };
+
+  // Default design settings with background support
   const settings: DesignSettings = designSettings || {
     fontFamily: "'Inter', sans-serif",
     fontSize: 100,
@@ -151,6 +212,7 @@ const LiveResumeCanvas = ({
     sectionSpacing: 20,
     accentColor: template.accentColor,
     layout: template.layout as DesignSettings["layout"],
+    background: "none",
   };
 
   return (
@@ -221,9 +283,9 @@ const LiveResumeCanvas = ({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
           >
-            {/* Paper with proper A4 aspect ratio */}
+            {/* Paper with proper A4 aspect ratio and background */}
             <div 
-              className="relative bg-white rounded-sm overflow-hidden"
+              className="relative rounded-sm overflow-hidden"
               style={{
                 width: `${A4_WIDTH}px`,
                 height: `${A4_HEIGHT}px`,
@@ -233,6 +295,7 @@ const LiveResumeCanvas = ({
                   0 12px 25px -8px rgba(0, 0, 0, 0.15),
                   0 0 0 1px rgba(0, 0, 0, 0.05)
                 `,
+                ...getBackgroundStyle(settings.background),
               }}
             >
               <DndContext

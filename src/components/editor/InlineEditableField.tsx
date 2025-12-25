@@ -304,18 +304,23 @@ export const InlineEditableField = ({
   };
 
   return (
-    <div ref={containerRef} className="relative inline-block w-full group text-left" dir="ltr" style={style}>
+    <div ref={containerRef} className="relative inline-block w-full group" style={style}>
       {/* Display layer */}
       {!isEditing && (
         <div
           onClick={handleClick}
           className={`
-            outline-none transition-all duration-150 cursor-text text-left
+            outline-none transition-all duration-150 cursor-text
             hover:bg-blue-50/30 rounded px-1 -mx-1
             ${!localValue ? "text-muted-foreground italic" : ""}
             ${className}
           `}
-          style={{ minHeight: multiline ? "3em" : "1.2em", direction: "ltr" }}
+          style={{ 
+            minHeight: multiline ? "3em" : "1.2em",
+            direction: "ltr",
+            textAlign: "left",
+            unicodeBidi: "embed",
+          }}
         >
           {renderTextWithIssues()}
         </div>
@@ -331,18 +336,18 @@ export const InlineEditableField = ({
           onKeyDown={handleKeyDown}
           onInput={handleInput}
           onMouseUp={handleTextSelect}
-          dir="ltr"
           className={`
-            outline-none transition-all duration-150 cursor-text text-left
+            outline-none transition-all duration-150 cursor-text
             bg-blue-50/50 ring-1 ring-blue-200 rounded px-1 -mx-1
             ${!localValue ? "text-muted-foreground italic" : ""}
             ${className}
           `}
           style={{ 
             minHeight: multiline ? "3em" : "1.2em", 
-            direction: "ltr", 
-            textAlign: "left",
-            unicodeBidi: "bidi-override",
+            direction: "ltr !important" as any,
+            textAlign: "left !important" as any,
+            unicodeBidi: "embed !important" as any,
+            writingMode: "horizontal-tb",
           }}
         >
           {localValue || placeholder}
